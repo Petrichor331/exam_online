@@ -1,0 +1,28 @@
+# ===== 前端 =====
+node_modules/
+dist/
+.vite/
+*.log
+
+# ===== 后端 =====
+target/
+*.class
+*.jar
+*.war
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.iml
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== env =====
+.env
+.env.*
+
+# 上传文件目录
+springboot/files/
+
