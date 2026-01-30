@@ -44,7 +44,7 @@
       </el-pagination>
     </div>
 
-    <el-dialog title="管理员信息" v-model="data.formVisible" width="40%" destroy-on-close>
+    <el-dialog title="教师信息" v-model="data.formVisible" width="40%" destroy-on-close>
       <el-form ref="form" :model="data.form" label-width="70px" style="padding: 20px">
         <el-form-item prop="username" label="用户名">
           <el-input v-model="data.form.username" placeholder="请输入用户名"></el-input>
@@ -102,7 +102,7 @@ const data = reactive({
 })
 
 const load = () =>{
-  request.get('/admin/selectPage', {
+  request.get('/teacher/selectPage', {
     params:{
       pageNum:data.pageNum,
       pageSize:data.pageSize,
@@ -132,7 +132,7 @@ const handleEdit = (row) => {
 
 const handleDelete = (id) => {
   ElMessageBox.confirm('删除后数据无法恢复，您确定删除吗？', '删除确认', { confirmButtonText:'确定', cancelButtonText:'取消', type:'warning'}).then(res =>{
-    request.delete('/admin/delete/' + id).then(res => {
+    request.delete('/teacher/delete/' + id).then(res => {
       if (res.code === '200') {
         ElMessage.success('操作成功')
         load()
@@ -151,7 +151,7 @@ const delBatch = () =>{
     return
   }
   ElMessageBox.confirm('删除后数据无法恢复，您确定删除吗？', '删除确认', { confirmButtonText:'确定', cancelButtonText:'取消', type:'warning'}).then(res =>{
-    request.delete('/admin/delete/Batch', {data:data.ids}).then(res => {
+    request.delete('/teacher/delete/batch', {data:data.ids}).then(res => {
       if(res.code === '200'){
         ElMessage.success('操作成功')
         load()
@@ -171,7 +171,7 @@ const handleSelectionChange = (rows) => {
 
 
 const add = () => {
-  request.post('/admin/add', data.form).then(res => {
+  request.post('/teacher/add', data.form).then(res => {
     if (res.code === '200') {
       ElMessage.success('操作成功')
       data.formVisible = false
@@ -183,7 +183,7 @@ const add = () => {
 }
 
 const update = () =>{
-  request.put('/admin/update', data.form).then(res=>{
+  request.put('/teacher/update', data.form).then(res=>{
     if(res.code==='200'){
       ElMessage.success('操作成功')
       data.formVisible = false

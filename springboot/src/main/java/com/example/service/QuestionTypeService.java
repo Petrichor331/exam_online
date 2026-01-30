@@ -2,57 +2,57 @@ package com.example.service;
 
 
 import cn.hutool.core.date.DateUtil;
-import com.example.common.Constants;
-import com.example.common.enums.ResultCodeEnum;
-import com.example.common.enums.RoleEnum;
-import com.example.entity.Account;
-import com.example.entity.Notice;
+import com.example.entity.QuestionType;
 import com.example.exception.CustomException;
-import com.example.mapper.NoticeMapper;
-import com.example.utils.TokenUtils;
+import com.example.mapper.QuestionTypeMapper;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ObjectUtils;
 
-import java.util.Date;
 import java.util.List;
 
 @Service
-public class NoticeService {
+public class QuestionTypeService {
     @Resource
-    private NoticeMapper noticeMapper;
+    private QuestionTypeMapper questionTypeMapper;
 
-    public void add(Notice notice) {
-        notice.setTime(DateUtil.now());
-        noticeMapper.insert(notice);
+    public void add(QuestionType questionType) {
+        List<QuestionType> list = questionTypeMapper.selectByName(questionType.getName());
+        if(list.size()>0){
+            throw new CustomException("-1","题型名称不能重复");
+        }
+        questionTypeMapper.insert(questionType);
     }
-    public PageInfo<Notice> selectPage(Notice notice, Integer pageNum, Integer pageSize) {
+    public PageInfo<QuestionType> selectPage(QuestionType questionType, Integer pageNum, Integer pageSize) {
         PageHelper.startPage(pageNum, pageSize);
-        List<Notice> list = noticeMapper.selectAll(notice);
+        List<QuestionType> list = questionTypeMapper.selectAll(questionType);
         return PageInfo.of(list);
     }
 
-    public List<Notice> selectAll(Notice notice) {
-        return noticeMapper.selectAll(notice);
+    public List<QuestionType> selectAll(QuestionType questionType) {
+        return questionTypeMapper.selectAll(questionType);
     }
 
-    public Notice selectById(Integer id) {
-        return noticeMapper.selectById(id);
+    public QuestionType selectById(Integer id) {
+        return questionTypeMapper.selectById(id);
     }
 
-    public void updateById(Notice notice) {
-        noticeMapper.updateById(notice);
+    public void updateById(QuestionType questionType) {
+        List<QuestionType> list = questionTypeMapper.selectByName(questionType.getName());
+        if(list.size()>0 && !questionType.getId().equals(list.get(0).getId())){
+            throw new CustomException("-1","题型名称不能重复");
+        }
+        questionTypeMapper.updateById(questionType);
     }
 
     public void deleteById(Integer id) {
-        noticeMapper.deleteById(id);
+        questionTypeMapper.deleteById(id);
     }
 
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
-            noticeMapper.deleteById(id);
+            questionTypeMapper.deleteById(id);
         }
     }
 

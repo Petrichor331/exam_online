@@ -2,57 +2,58 @@ package com.example.service;
 
 
 import cn.hutool.core.date.DateUtil;
-import com.example.common.Constants;
-import com.example.common.enums.ResultCodeEnum;
 import com.example.common.enums.RoleEnum;
 import com.example.entity.Account;
-import com.example.entity.Notice;
-import com.example.exception.CustomException;
-import com.example.mapper.NoticeMapper;
+import com.example.entity.Course;
+import com.example.mapper.CourseMapper;
 import com.example.utils.TokenUtils;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ObjectUtils;
 
-import java.util.Date;
 import java.util.List;
 
 @Service
-public class NoticeService {
+public class CourseService {
     @Resource
-    private NoticeMapper noticeMapper;
+    private CourseMapper courseMapper;
 
-    public void add(Notice notice) {
-        notice.setTime(DateUtil.now());
-        noticeMapper.insert(notice);
+    public void add(Course course) {
+        Account account = TokenUtils.getCurrentUser();
+        course.setTeacherId(account.getId());
+        courseMapper.insert(course);
     }
-    public PageInfo<Notice> selectPage(Notice notice, Integer pageNum, Integer pageSize) {
+    public PageInfo<Course> selectPage(Course course, Integer pageNum, Integer pageSize) {
+        Account account = TokenUtils.getCurrentUser();
+        //如果是老师的话，设一下id，则会执行mapper中<if test="teacherId != null"> and teacher_id = #{teacherId}</if>
+        if(RoleEnum.TEACHER.name().equals(account.getRole())){
+            course.setTeacherId(account.getId());
+        }
         PageHelper.startPage(pageNum, pageSize);
-        List<Notice> list = noticeMapper.selectAll(notice);
+        List<Course> list = courseMapper.selectAll(course);
         return PageInfo.of(list);
     }
 
-    public List<Notice> selectAll(Notice notice) {
-        return noticeMapper.selectAll(notice);
+    public List<Course> selectAll(Course course) {
+        return courseMapper.selectAll(course);
     }
 
-    public Notice selectById(Integer id) {
-        return noticeMapper.selectById(id);
+    public Course selectById(Integer id) {
+        return courseMapper.selectById(id);
     }
 
-    public void updateById(Notice notice) {
-        noticeMapper.updateById(notice);
+    public void updateById(Course course) {
+        courseMapper.updateById(course);
     }
 
     public void deleteById(Integer id) {
-        noticeMapper.deleteById(id);
+        courseMapper.deleteById(id);
     }
 
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
-            noticeMapper.deleteById(id);
+            courseMapper.deleteById(id);
         }
     }
 

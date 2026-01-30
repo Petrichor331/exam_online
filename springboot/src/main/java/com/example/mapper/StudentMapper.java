@@ -1,23 +1,23 @@
 package com.example.mapper;
 
-import com.example.entity.Admin;
+import com.example.entity.Student;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
-public interface AdminMapper {
+public interface StudentMapper {
 
-    int insert(Admin admin);
+    int insert(Student student);
 
-    @Select("select * from `admin` where username=#{username}")
-    Admin selectByUsername(String username);
+    @Select("select * from `student` where username=#{username}")
+    Student selectByUsername(String username);
 
-    List<Admin> selectAll(Admin admin);
+    List<Student> selectAll(Student student);
 
-    void updateById(Admin admin);
+    void updateById(Student student);
 
     void deleteById(Integer id);
 
-    @Select("select * from `admin` where id=#{id}")
-    Admin selectById(Integer id);
+    @Select("select * from `student` where id=#{id}")
+    Student selectById(Integer id);
 }

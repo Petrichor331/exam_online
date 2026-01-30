@@ -1,12 +1,12 @@
 <template>
-  <div class="notice-container">
+  <div class="examPlan-container">
     <!-- 搜索区域 -->
     <div class="search-card">
       <div class="search-left">
         <el-input
             v-model="data.title"
             :prefix-icon="Search"
-            placeholder="请输入公告标题搜索..."
+            placeholder="请输入标题搜索..."
             class="search-input"
             clearable
             @keyup.enter="load"
@@ -24,7 +24,7 @@
     <!-- 操作按钮区域 -->
     <div class="toolbar-card">
       <div class="toolbar-left">
-        <el-button type="primary" :icon="Plus" @click="handleAdd">新增公告</el-button>
+        <el-button type="primary" :icon="Plus" @click="handleAdd">新增考试安排</el-button>
         <el-button type="danger" plain :icon="Delete" @click="delBatch" :disabled="!data.ids.length">
           批量删除
           <el-tag v-if="data.ids.length" type="danger" effect="dark" size="small" class="batch-tag">
@@ -50,7 +50,7 @@
           :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: 'bold' }"
       >
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column prop="title" label="公告标题" min-width="200" show-overflow-tooltip>
+        <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
             <div class="title-cell">
               <el-icon class="title-icon"><Bell /></el-icon>
@@ -58,7 +58,7 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="content" label="公告内容" min-width="300" show-overflow-tooltip>
+        <el-table-column prop="content" label="内容" min-width="300" show-overflow-tooltip>
           <template #default="{ row }">
             <span class="content-text">{{ row.content }}</span>
           </template>
@@ -86,7 +86,7 @@
       </el-table>
 
       <!-- 空状态 -->
-      <el-empty v-if="!data.tableData.length && !data.loading" description="暂无公告数据" />
+      <el-empty v-if="!data.tableData.length && !data.loading" description="暂无考试数据" />
     </div>
 
     <!-- 分页区域 -->
@@ -105,35 +105,35 @@
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog
-        :title="data.form.id ? '编辑公告' : '新增公告'"
+        :title="data.form.id ? '编辑考试信息' : '新增考试'"
         v-model="data.formVisible"
         width="600px"
         destroy-on-close
         :close-on-click-modal="false"
-        class="notice-dialog"
+        class="examPlan-dialog"
     >
       <el-form
           ref="formRef"
           :model="data.form"
           :rules="rules"
           label-width="80px"
-          class="notice-form"
+          class="examPlan-form"
       >
-        <el-form-item prop="title" label="公告标题">
+        <el-form-item prop="title" label="标题">
           <el-input
               v-model="data.form.title"
-              placeholder="请输入公告标题"
+              placeholder="请输入标题"
               maxlength="100"
               show-word-limit
               :prefix-icon="Document"
           />
         </el-form-item>
-        <el-form-item prop="content" label="公告内容">
+        <el-form-item prop="content" label="内容">
           <el-input
               type="textarea"
               :rows="6"
               v-model="data.form.content"
-              placeholder="请输入公告内容..."
+              placeholder="请输入内容..."
               maxlength="500"
               show-word-limit
               resize="none"
@@ -173,12 +173,12 @@ const baseUrl = import.meta.env.VITE_BASE_URL
 // 表单校验规则
 const rules = {
   title: [
-    { required: true, message: '请输入公告标题', trigger: 'blur' },
-    { min: 2, max: 100, message: '长度在 2 到 100 个字符', trigger: 'blur' }
+    { required: true, message: '请输入标题', trigger: 'blur' },
+    { min: 1, max: 100, message: '长度在 1 到 100 个字符', trigger: 'blur' }
   ],
   content: [
-    { required: true, message: '请输入公告内容', trigger: 'blur' },
-    { min: 5, max: 500, message: '长度在 5 到 500 个字符', trigger: 'blur' }
+    { required: true, message: '请输入内容', trigger: 'blur' },
+    { min: 0, max: 500, message: '长度在 0 到 500 个字符', trigger: 'blur' }
   ]
 }
 
@@ -201,7 +201,7 @@ const data = reactive({
 const load = async () => {
   data.loading = true
   try {
-    const res = await request.get('/notice/selectPage', {
+    const res = await request.get('/examPlan/selectPage', {
       params: {
         pageNum: data.pageNum,
         pageSize: data.pageSize,
@@ -233,7 +233,7 @@ const handleDelete = (id) => {
   ElMessageBox.confirm(
       '<div style="text-align: center; padding: 20px 0;">' +
       '<i class="el-icon" style="font-size: 48px; color: #f56c6c; margin-bottom: 16px;"><svg viewBox="0 0 1024 1024"><path fill="#f56c6c" d="M512 64a448 448 0 1 1 0 896 448 448 0 0 1 0-896zm0 832a384 384 0 1 0 0-768 384 384 0 0 0 0 768zm48-384a48 48 0 1 1-96 0 48 48 0 0 1 96 0zm-48-208a48 48 0 0 1 48 48v176a48 48 0 0 1-96 0V352a48 48 0 0 1 48-48z"/></svg></i>' +
-      '<div style="font-size: 16px; color: #303133; margin-bottom: 8px;">确定删除该公告吗？</div>' +
+      '<div style="font-size: 16px; color: #303133; margin-bottom: 8px;">确定删除该考试吗？</div>' +
       '<div style="font-size: 13px; color: #909399;">删除后无法恢复，请谨慎操作</div>' +
       '</div>',
       '删除确认',
@@ -246,7 +246,7 @@ const handleDelete = (id) => {
         center: true
       }
   ).then(() => {
-    request.delete('/notice/delete/' + id).then(res => {
+    request.delete('/examPlan/delete/' + id).then(res => {
       if (res.code === '200') {
         ElMessage.success('删除成功')
         load()
@@ -263,7 +263,7 @@ const delBatch = () => {
     return
   }
   ElMessageBox.confirm(
-      `确定删除选中的 <strong style="color: #f56c6c; font-size: 16px;">${data.ids.length}</strong> 条公告吗？`,
+      `确定删除选中的 <strong style="color: #f56c6c; font-size: 16px;">${data.ids.length}</strong> 条考试吗？`,
       '批量删除确认',
       {
         confirmButtonText: '确定删除',
@@ -273,7 +273,7 @@ const delBatch = () => {
         type: 'warning'
       }
   ).then(() => {
-    request.delete('/notice/delete/batch', { data: data.ids }).then(res => {
+    request.delete('/examPlan/delete/batch', { data: data.ids }).then(res => {
       if (res.code === '200') {
         ElMessage.success('批量删除成功')
         load()
@@ -291,7 +291,7 @@ const handleSelectionChange = (rows) => {
 const add = async () => {
   data.saving = true
   try {
-    const res = await request.post('/notice/add', data.form)
+    const res = await request.post('/examPlan/add', data.form)
     if (res.code === '200') {
       ElMessage.success('新增成功')
       data.formVisible = false
@@ -307,7 +307,7 @@ const add = async () => {
 const update = async () => {
   data.saving = true
   try {
-    const res = await request.put('/notice/update', data.form)
+    const res = await request.put('/examPlan/update', data.form)
     if (res.code === '200') {
       ElMessage.success('修改成功')
       data.formVisible = false
@@ -338,7 +338,7 @@ load()
 </script>
 
 <style scoped>
-.notice-container {
+.examPlan-container {
   padding: 20px;
   background-color: #fff0f54d;
   min-height: calc(100vh - 84px);
@@ -429,7 +429,7 @@ load()
 }
 
 /* 弹窗内部样式 - 通过类名直接控制 */
-.notice-form {
+.examPlan-form {
   padding: 20px 10px;
 }
 

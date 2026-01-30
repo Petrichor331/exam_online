@@ -24,6 +24,13 @@
         <el-table-column prop="role" label="角色" />
         <el-table-column prop="phone" label="电话" />
         <el-table-column prop="email" label="邮箱" />
+        <el-table-column prop="status" label="状态" >
+          <template v-slot="scope">
+            <el-tag v-if="scope.row.status === '审核通过'" type="success">{{scope.row.status}}</el-tag>
+            <el-tag v-if="scope.row.status === '待审核'" type="warning">{{scope.row.status}}</el-tag>
+            <el-tag v-if="scope.row.status === '审核不通过'" type="danger">{{scope.row.status}}</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">
           <template v-slot="scope">
             <el-button type="primary" circle :icon="Edit" @click="handleEdit(scope.row)"></el-button>
@@ -44,7 +51,7 @@
       </el-pagination>
     </div>
 
-    <el-dialog title="管理员信息" v-model="data.formVisible" width="40%" destroy-on-close>
+    <el-dialog title="教师信息" v-model="data.formVisible" width="40%" destroy-on-close>
       <el-form ref="form" :model="data.form" label-width="70px" style="padding: 20px">
         <el-form-item prop="username" label="用户名">
           <el-input v-model="data.form.username" placeholder="请输入用户名"></el-input>
@@ -66,6 +73,13 @@
         </el-form-item>
         <el-form-item prop="email" label="邮箱">
           <el-input v-model="data.form.email" placeholder="请输入邮箱"></el-input>
+        </el-form-item>
+        <el-form-item prop="status" label="状态">
+          <el-select v-model="data.form.status" placeholder="请选择状态">
+            <el-option label="待审核" value="待审核"></el-option>
+            <el-option label="审核通过" value="审核通过"></el-option>
+            <el-option label="审核不通过" value="审核不通过"></el-option>
+          </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -102,7 +116,7 @@ const data = reactive({
 })
 
 const load = () =>{
-  request.get('/admin/selectPage', {
+  request.get('/student/selectPage', {
     params:{
       pageNum:data.pageNum,
       pageSize:data.pageSize,
@@ -132,7 +146,7 @@ const handleEdit = (row) => {
 
 const handleDelete = (id) => {
   ElMessageBox.confirm('删除后数据无法恢复，您确定删除吗？', '删除确认', { confirmButtonText:'确定', cancelButtonText:'取消', type:'warning'}).then(res =>{
-    request.delete('/admin/delete/' + id).then(res => {
+    request.delete('/student/delete/' + id).then(res => {
       if (res.code === '200') {
         ElMessage.success('操作成功')
         load()
@@ -151,7 +165,7 @@ const delBatch = () =>{
     return
   }
   ElMessageBox.confirm('删除后数据无法恢复，您确定删除吗？', '删除确认', { confirmButtonText:'确定', cancelButtonText:'取消', type:'warning'}).then(res =>{
-    request.delete('/admin/delete/batch', {data:data.ids}).then(res => {
+    request.delete('/student/delete/batch', {data:data.ids}).then(res => {
       if(res.code === '200'){
         ElMessage.success('操作成功')
         load()
@@ -171,7 +185,7 @@ const handleSelectionChange = (rows) => {
 
 
 const add = () => {
-  request.post('/admin/add', data.form).then(res => {
+  request.post('/student/add', data.form).then(res => {
     if (res.code === '200') {
       ElMessage.success('操作成功')
       data.formVisible = false
@@ -183,7 +197,7 @@ const add = () => {
 }
 
 const update = () =>{
-  request.put('/admin/update', data.form).then(res=>{
+  request.put('/student/update', data.form).then(res=>{
     if(res.code==='200'){
       ElMessage.success('操作成功')
       data.formVisible = false

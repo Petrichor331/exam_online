@@ -3,7 +3,7 @@
     <div class="manager-header">
       <div class="manager-header-left">
         <img src="@/assets/img/logo.png" alt="">
-        <div class="title">管理系统</div>
+        <div class="title">在线考试系统后台</div>
       </div>
       <div class="manager-header-center">
         <el-breadcrumb separator="/">
@@ -44,13 +44,19 @@
               <span>信息管理</span>
             </template>
             <el-menu-item index="/manager/notice">系统公告</el-menu-item>
+            <el-menu-item index="/manager/examPlan">考试安排</el-menu-item>
+            <el-menu-item index="/manager/questionType">题型信息</el-menu-item>
+            <el-menu-item index="/manager/course">课程信息</el-menu-item>
+            <el-menu-item index="/manager/question">题库信息</el-menu-item>
           </el-sub-menu>
           <el-sub-menu index="2">
             <template #title>
               <el-icon><Menu /></el-icon>
               <span>用户管理</span>
             </template>
-            <el-menu-item index="/manager/admin">管理员信息</el-menu-item>
+            <el-menu-item v-if="data.user.role==='ADMIN'" index="/manager/admin">管理员信息</el-menu-item>
+            <el-menu-item v-if="data.user.role==='ADMIN'" index="/manager/teacher">教师信息</el-menu-item>
+            <el-menu-item v-if="data.user.role==='ADMIN'" index="/manager/student">学生信息</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </div>

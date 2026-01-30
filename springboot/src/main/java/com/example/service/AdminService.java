@@ -71,7 +71,6 @@ public class AdminService {
         if(!dbAdmin.getPassword().equals(account.getPassword())){
             throw new CustomException(ResultCodeEnum.USER_ACCOUNT_OR_PASSWORD_ERROR);
         }
-        //TODO token
         String token = TokenUtils.createToken(dbAdmin.getId()+"-"+dbAdmin.getRole(), dbAdmin.getPassword());
         dbAdmin.setToken(token);
         return dbAdmin;

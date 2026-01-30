@@ -53,15 +53,17 @@ public class AdminController {
         return Result.success();
     }
 
+    @DeleteMapping("/delete/batch")
+    public Result delete(@RequestBody List<Integer> ids){
+        adminService.deleteBatch(ids);
+        return Result.success();
+    }
+
     @DeleteMapping("/delete/{id}")
     public Result delete(@PathVariable Integer id){
         adminService.deleteById(id);
         return Result.success();
     }
 
-    @DeleteMapping("/delete/batch")
-    public Result delete(@RequestBody List<Integer> ids){
-        adminService.deleteBatch(ids);
-        return Result.success();
-    }
+
 }

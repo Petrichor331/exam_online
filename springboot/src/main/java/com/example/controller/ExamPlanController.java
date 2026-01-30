@@ -2,8 +2,8 @@ package com.example.controller;
 
 
 import com.example.common.Result;
-import com.example.entity.Notice;
-import com.example.service.NoticeService;
+import com.example.entity.ExamPlan;
+import com.example.service.ExamPlanService;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
@@ -11,14 +11,14 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/notice")
-public class NoticeController {
+@RequestMapping("/examPlan")
+public class ExamPlanController {
 
     @Resource
-    private NoticeService noticeService;
+    private ExamPlanService examPlanService;
     @PostMapping("/add")
-    public Result add(@RequestBody Notice notice){
-        noticeService.add(notice);
+    public Result add(@RequestBody ExamPlan examPlan){
+        examPlanService.add(examPlan);
         return Result.success();
     }
 
@@ -26,42 +26,42 @@ public class NoticeController {
      * 分页查询
      */
     @GetMapping("/selectPage")
-    public Result selectPage(Notice notice,
+    public Result selectPage(ExamPlan examPlan,
                             @RequestParam(defaultValue = "1") Integer pageNum,
                              @RequestParam(defaultValue = "10") Integer pageSize){
-        PageInfo<Notice> pageInfo =noticeService.selectPage(notice,pageNum,pageSize);
+        PageInfo<ExamPlan> pageInfo =examPlanService.selectPage(examPlan,pageNum,pageSize);
         return Result.success(pageInfo);
     }
 
 
     @GetMapping("/selectById/{id}")
     public Result selectById(@PathVariable Integer id){
-        Notice notice = noticeService.selectById(id);
-        return Result.success(notice);
+        ExamPlan examPlan = examPlanService.selectById(id);
+        return Result.success(examPlan);
     }
 
     @GetMapping("/selectAll")
     //不管前端填了什么，都会返回所有数据
-    public Result selectAll(Notice notice){
-        List<Notice> list = noticeService.selectAll(notice);
+    public Result selectAll(ExamPlan examPlan){
+        List<ExamPlan> list = examPlanService.selectAll(examPlan);
         return Result.success(list);
     }
 
     @PutMapping("/update")
-    public Result update(@RequestBody Notice notice){
-        noticeService.updateById(notice);
+    public Result update(@RequestBody ExamPlan examPlan){
+        examPlanService.updateById(examPlan);
         return Result.success();
     }
 
     @DeleteMapping("/delete/{id}")
     public Result delete(@PathVariable Integer id){
-        noticeService.deleteById(id);
+        examPlanService.deleteById(id);
         return Result.success();
     }
 
     @DeleteMapping("/delete/batch")
     public Result delete(@RequestBody List<Integer> ids){
-        noticeService.deleteBatch(ids);
+        examPlanService.deleteBatch(ids);
         return Result.success();
     }
 }

@@ -10,6 +10,8 @@ import com.example.common.enums.RoleEnum;
 import com.example.entity.Account;
 import com.example.exception.CustomException;
 import com.example.service.AdminService;
+import com.example.service.StudentService;
+import com.example.service.TeacherService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,12 +30,20 @@ public class TokenUtils {
     private static final Logger logger = LoggerFactory.getLogger(TokenUtils.class);
     @Resource
     private AdminService adminService;
+    @Resource
+    private TeacherService teacherService;
+    @Resource
+    private StudentService studentService;
 
     private static AdminService staticAdminService;
+    private static TeacherService staticTeacherService;
+    private static StudentService staticStudentService;
     @PostConstruct
     public void init(){
         //在启动的时候就初始化，方便后面直接使用
         staticAdminService = adminService;
+        staticTeacherService = teacherService;
+        staticStudentService = studentService;
     }
     /**
      * 生成token
@@ -57,9 +67,15 @@ public class TokenUtils {
             Integer userId = Integer.valueOf(audience.split("-")[0]);
             String role = audience.split("-")[1];
             if(RoleEnum.ADMIN.name().equals( role)){
-                staticAdminService.selectById(userId);
+                return staticAdminService.selectById(userId);
             }
-            //TODO 还有其他角色的
+            if(RoleEnum.TEACHER.name().equals( role)){
+                return staticTeacherService.selectById(userId);
+            }
+            if (RoleEnum.STUDENT.name().equals( role)){
+                return staticStudentService.selectById(userId);
+            }
+
         }catch (Exception e){
             logger.error("获取当前登录用户出错",e);
         }

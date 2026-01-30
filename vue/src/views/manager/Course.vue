@@ -1,12 +1,12 @@
 <template>
-  <div class="notice-container">
+  <div class="course-container">
     <!-- 搜索区域 -->
     <div class="search-card">
       <div class="search-left">
         <el-input
-            v-model="data.title"
+            v-model="data.name"
             :prefix-icon="Search"
-            placeholder="请输入公告标题搜索..."
+            placeholder="请输入课程名称搜索..."
             class="search-input"
             clearable
             @keyup.enter="load"
@@ -24,7 +24,7 @@
     <!-- 操作按钮区域 -->
     <div class="toolbar-card">
       <div class="toolbar-left">
-        <el-button type="primary" :icon="Plus" @click="handleAdd">新增公告</el-button>
+        <el-button v-if="data.user.role==='TEACHER'" type="primary" :icon="Plus" @click="handleAdd">新增课程</el-button>
         <el-button type="danger" plain :icon="Delete" @click="delBatch" :disabled="!data.ids.length">
           批量删除
           <el-tag v-if="data.ids.length" type="danger" effect="dark" size="small" class="batch-tag">
@@ -50,25 +50,35 @@
           :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: 'bold' }"
       >
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column prop="title" label="公告标题" min-width="200" show-overflow-tooltip>
+        <el-table-column prop="img" label="课程封面" >
+          <template v-slot="scope">
+            <el-image style="width:70px; height:50px; border-radius: 5px; display: block "
+                      :src="scope.row.img" :preview-src-list="[scope.row.img]" preview-teleported ></el-image>
+          </template>
+        </el-table-column>
+        <el-table-column prop="name" label="课程名称" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
-            <div class="title-cell">
-              <el-icon class="title-icon"><Bell /></el-icon>
-              <span class="title-text">{{ row.title }}</span>
+            <div class="name-cell">
+              <el-icon class="name-icon"><Bell /></el-icon>
+              <span class="name-text">{{ row.name }}</span>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="content" label="公告内容" min-width="300" show-overflow-tooltip>
+        <el-table-column prop="credit" label="课程学分" min-width="300" show-overflow-tooltip>
           <template #default="{ row }">
-            <span class="content-text">{{ row.content }}</span>
+            <span class="content-text">{{ row.credit }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="time" label="发布时间" width="180" align="center">
-
+        <el-table-column prop="teacherName" label="授课教师" min-width="300" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span class="content-text">{{ row.teacherName }}</span>
+          </template>
         </el-table-column>
+        
         <el-table-column label="操作" width="120" fixed="right" align="center">
           <template #default="{ row }">
             <el-button
+                v-if="data.user.role === 'TEACHER'"
                 type="primary"
                 link
                 :icon="Edit"
@@ -86,7 +96,7 @@
       </el-table>
 
       <!-- 空状态 -->
-      <el-empty v-if="!data.tableData.length && !data.loading" description="暂无公告数据" />
+      <el-empty v-if="!data.tableData.length && !data.loading" description="暂无课程数据" />
     </div>
 
     <!-- 分页区域 -->
@@ -105,40 +115,51 @@
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog
-        :title="data.form.id ? '编辑公告' : '新增公告'"
+        :title="data.form.id ? '编辑课程' : '新增课程'"
         v-model="data.formVisible"
         width="600px"
         destroy-on-close
         :close-on-click-modal="false"
-        class="notice-dialog"
+        class="course-dialog"
     >
       <el-form
           ref="formRef"
           :model="data.form"
           :rules="rules"
           label-width="80px"
-          class="notice-form"
+          class="course-form"
       >
-        <el-form-item prop="title" label="公告标题">
+        <el-form-item prop="name" label="课程标题">
           <el-input
-              v-model="data.form.title"
-              placeholder="请输入公告标题"
+              v-model="data.form.name"
+              placeholder="请输入课程标题"
               maxlength="100"
               show-word-limit
               :prefix-icon="Document"
           />
         </el-form-item>
-        <el-form-item prop="content" label="公告内容">
+        <el-form-item prop="img" label="课程封面" >
+          <el-upload
+              :action="baseUrl + '/files/upload'"
+              :on-success="handleFileUpload"
+              list-type="picture"
+          >
+            <el-button type="primary">上传封面</el-button>
+          </el-upload>
+        </el-form-item>
+        <el-form-item prop="credit" label="课程内容">
           <el-input
-              type="textarea"
-              :rows="6"
-              v-model="data.form.content"
-              placeholder="请输入公告内容..."
-              maxlength="500"
-              show-word-limit
-              resize="none"
+              v-model="data.form.credit"
+              placeholder="请输入课程学分..."
           />
         </el-form-item>
+<!--        <el-form-item prop="teacherName" label="授课教师">-->
+<!--          <el-input-->
+<!--              v-model="data.form.teacherName"-->
+<!--              placeholder="请输入授课教师..."-->
+<!--          />-->
+<!--        </el-form-item>-->
+
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -170,26 +191,31 @@ import dayjs from 'dayjs'
 const formRef = ref()
 const baseUrl = import.meta.env.VITE_BASE_URL
 
+
+const handleFileUpload = (res) => {
+  data.form.img = res.data
+}
 // 表单校验规则
 const rules = {
   title: [
-    { required: true, message: '请输入公告标题', trigger: 'blur' },
+    { required: true, message: '请输入课程标题', trigger: 'blur' },
     { min: 1, max: 100, message: '长度在 1 到 100 个字符', trigger: 'blur' }
   ],
   content: [
-    { required: true, message: '请输入公告内容', trigger: 'blur' },
+    { required: true, message: '请输入课程内容', trigger: 'blur' },
     { min: 0, max: 500, message: '长度在 0 到 500 个字符', trigger: 'blur' }
   ]
 }
 
 const data = reactive({
+  user:JSON.parse(localStorage.getItem('xm-user') || '{}'),
   formVisible: false,
   form: {},
   tableData: [],
   pageNum: 1,
   pageSize: 10,
   total: 0,
-  title: '',
+  name: '',
   ids: [],
   loading: false,
   saving: false
@@ -201,11 +227,11 @@ const data = reactive({
 const load = async () => {
   data.loading = true
   try {
-    const res = await request.get('/notice/selectPage', {
+    const res = await request.get('/course/selectPage', {
       params: {
         pageNum: data.pageNum,
         pageSize: data.pageSize,
-        title: data.title
+        name: data.name
       }
     })
     if (res.code === '200') {
@@ -233,7 +259,7 @@ const handleDelete = (id) => {
   ElMessageBox.confirm(
       '<div style="text-align: center; padding: 20px 0;">' +
       '<i class="el-icon" style="font-size: 48px; color: #f56c6c; margin-bottom: 16px;"><svg viewBox="0 0 1024 1024"><path fill="#f56c6c" d="M512 64a448 448 0 1 1 0 896 448 448 0 0 1 0-896zm0 832a384 384 0 1 0 0-768 384 384 0 0 0 0 768zm48-384a48 48 0 1 1-96 0 48 48 0 0 1 96 0zm-48-208a48 48 0 0 1 48 48v176a48 48 0 0 1-96 0V352a48 48 0 0 1 48-48z"/></svg></i>' +
-      '<div style="font-size: 16px; color: #303133; margin-bottom: 8px;">确定删除该公告吗？</div>' +
+      '<div style="font-size: 16px; color: #303133; margin-bottom: 8px;">确定删除该课程吗？</div>' +
       '<div style="font-size: 13px; color: #909399;">删除后无法恢复，请谨慎操作</div>' +
       '</div>',
       '删除确认',
@@ -246,7 +272,7 @@ const handleDelete = (id) => {
         center: true
       }
   ).then(() => {
-    request.delete('/notice/delete/' + id).then(res => {
+    request.delete('/course/delete/' + id).then(res => {
       if (res.code === '200') {
         ElMessage.success('删除成功')
         load()
@@ -263,7 +289,7 @@ const delBatch = () => {
     return
   }
   ElMessageBox.confirm(
-      `确定删除选中的 <strong style="color: #f56c6c; font-size: 16px;">${data.ids.length}</strong> 条公告吗？`,
+      `确定删除选中的 <strong style="color: #f56c6c; font-size: 16px;">${data.ids.length}</strong> 条课程吗？`,
       '批量删除确认',
       {
         confirmButtonText: '确定删除',
@@ -273,7 +299,7 @@ const delBatch = () => {
         type: 'warning'
       }
   ).then(() => {
-    request.delete('/notice/delete/batch', { data: data.ids }).then(res => {
+    request.delete('/course/delete/batch', { data: data.ids }).then(res => {
       if (res.code === '200') {
         ElMessage.success('批量删除成功')
         load()
@@ -289,9 +315,10 @@ const handleSelectionChange = (rows) => {
 }
 
 const add = async () => {
+  // data.form.teacherId = data.user.id
   data.saving = true
   try {
-    const res = await request.post('/notice/add', data.form)
+    const res = await request.post('/course/add', data.form)
     if (res.code === '200') {
       ElMessage.success('新增成功')
       data.formVisible = false
@@ -307,7 +334,7 @@ const add = async () => {
 const update = async () => {
   data.saving = true
   try {
-    const res = await request.put('/notice/update', data.form)
+    const res = await request.put('/course/update', data.form)
     if (res.code === '200') {
       ElMessage.success('修改成功')
       data.formVisible = false
@@ -329,7 +356,7 @@ const save = () => {
 }
 
 const reset = () => {
-  data.title = ''
+  data.name = ''
   data.pageNum = 1
   load()
 }
@@ -338,7 +365,7 @@ load()
 </script>
 
 <style scoped>
-.notice-container {
+.course-container {
   padding: 20px;
   background-color: #fff0f54d;
   min-height: calc(100vh - 84px);
@@ -429,7 +456,7 @@ load()
 }
 
 /* 弹窗内部样式 - 通过类名直接控制 */
-.notice-form {
+.course-form {
   padding: 20px 10px;
 }
 

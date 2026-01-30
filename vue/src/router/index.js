@@ -10,9 +10,15 @@ const router = createRouter({
       children: [
         { path: 'home', meta: { name: '系统首页' }, component: () => import('@/views/manager/Home.vue')  },
         { path: 'admin', meta: { name: '管理员信息' }, component: () => import('@/views/manager/Admin.vue')},
+        { path: 'teacher', meta: { name: '教师信息' }, component: () => import('@/views/manager/Teacher.vue')},
+        { path: 'student', meta: { name: '学生信息' }, component: () => import('@/views/manager/Student.vue')},
         { path: 'person', meta: { name: '个人资料' }, component: () => import('@/views/manager/Person.vue'),  },
         { path: 'password', meta: { name: '修改密码' }, component: () => import('@/views/manager/Password.vue'),  },
         { path: 'notice', meta: { name: '系统公告' }, component: () => import('@/views/manager/Notice.vue'),  },
+        { path: 'examPlan', meta: { name: '考试安排' }, component: () => import('@/views/manager/ExamPlan.vue'),  },
+        { path: 'questionType', meta: { name: '题型信息' }, component: () => import('@/views/manager/QuestionType.vue'),  },
+        { path: 'course', meta: { name: '课程信息' }, component: () => import('@/views/manager/Course.vue'),  },
+        { path: 'question', meta: { name: '题库信息' }, component: () => import('@/views/manager/Question.vue'),  },
 
       ]
     },

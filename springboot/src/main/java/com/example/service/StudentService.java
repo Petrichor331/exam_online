@@ -5,88 +5,99 @@ import com.example.common.Constants;
 import com.example.common.enums.ResultCodeEnum;
 import com.example.common.enums.RoleEnum;
 import com.example.entity.Account;
-import com.example.entity.Admin;
+import com.example.entity.Student;
 import com.example.exception.CustomException;
-import com.example.mapper.AdminMapper;
+import com.example.mapper.StudentMapper;
 import com.example.utils.TokenUtils;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 
 @Service
-public class AdminService {
+public class StudentService {
     @Resource
-    private AdminMapper adminMapper;
-
-    public void add(Admin admin){
-        Admin dbAdmin = adminMapper.selectByUsername(admin.getUsername());
-        if(dbAdmin!=null){
+    private StudentMapper studentMapper;
+    //对应后台管理那个页面里面的新增学生，跟注册不一样
+    public void add(Student student){
+        Student dbStudent = studentMapper.selectByUsername(student.getUsername());
+        if(dbStudent!=null){
             throw new CustomException(ResultCodeEnum.USER_EXIST_ERROR);
         }
-        if(ObjectUtils.isEmpty(admin.getPassword())){
-            admin.setPassword(Constants.USER_DEFALUT_PASSWORD);
+        if(ObjectUtils.isEmpty(student.getPassword())){
+            student.setPassword(Constants.USER_DEFALUT_PASSWORD);
         }
-        if(ObjectUtils.isEmpty(admin.getName())){
-            admin.setName(admin.getUsername());
+        if(ObjectUtils.isEmpty(student.getName())){
+            student.setName(student.getUsername());
         }
-        admin.setRole(RoleEnum.ADMIN.name());
-        adminMapper.insert(admin);
+        student.setRole(RoleEnum.STUDENT.name());
+        student.setStatus("待审核");
+        studentMapper.insert(student);
     }
 
-    public PageInfo<Admin> selectPage(Admin admin,Integer pageNum, Integer pageSize){
+    public PageInfo<Student> selectPage(Student student,Integer pageNum, Integer pageSize){
         PageHelper.startPage(pageNum,pageSize);
-        List<Admin> list = adminMapper.selectAll(admin);
+        List<Student> list = studentMapper.selectAll(student);
         return PageInfo.of(list);
     }
-    public List<Admin> selectAll(Admin admin) {
-        return adminMapper.selectAll(admin);
+    public List<Student> selectAll(Student student) {
+        return studentMapper.selectAll(student);
     }
-    public Admin selectById(Integer id) {
-        return adminMapper.selectById(id);
+    public Student selectById(Integer id) {
+        return studentMapper.selectById(id);
     }
 
-    public void updateById(Admin admin) {
-        adminMapper.updateById(admin);
+    public void updateById(Student student) {
+        studentMapper.updateById(student);
     }
 
     public void deleteById(Integer id) {
-        adminMapper.deleteById(id);
+        studentMapper.deleteById(id);
     }
 
     public void deleteBatch(List<Integer> ids) {
         for(Integer id:ids){
-            adminMapper.deleteById(id);
+            studentMapper.deleteById(id);
         }
     }
 
-    public Admin login(Account account) {
-        Admin dbAdmin = adminMapper.selectByUsername(account.getUsername());
-        if(dbAdmin==null){
+    public Student login(Account account) {
+        Student dbStudent = studentMapper.selectByUsername(account.getUsername());
+        if(dbStudent==null){
             throw new CustomException(ResultCodeEnum.USER_NOT_EXIST_ERROR);
         }
-        if(!dbAdmin.getPassword().equals(account.getPassword())){
+        if(!dbStudent.getPassword().equals(account.getPassword())){
             throw new CustomException(ResultCodeEnum.USER_ACCOUNT_OR_PASSWORD_ERROR);
         }
-        //TODO token
-        String token = TokenUtils.createToken(dbAdmin.getId()+"-"+dbAdmin.getRole(), dbAdmin.getPassword());
-        dbAdmin.setToken(token);
-        return dbAdmin;
+        if(!dbStudent.getStatus().equals("审核通过")){
+            throw new CustomException(ResultCodeEnum.USER_NOT_PASS_ERROR);
+        }
+
+        String token = TokenUtils.createToken(dbStudent.getId()+"-"+dbStudent.getRole(), dbStudent.getPassword());
+        dbStudent.setToken(token);
+        return dbStudent;
 
     }
 
     public void updatePassword(Account account) {
-        Admin dbAdmin = adminMapper.selectByUsername(account.getUsername());
-        if(ObjectUtils.isEmpty(dbAdmin)){
+        Student dbStudent = studentMapper.selectByUsername(account.getUsername());
+        if(ObjectUtils.isEmpty(dbStudent)){
             throw new CustomException(ResultCodeEnum.USER_NOT_EXIST_ERROR);
         }
-        if(!dbAdmin.getPassword().equals(account.getPassword())){
+        if(!dbStudent.getPassword().equals(account.getPassword())){
             throw new CustomException(ResultCodeEnum.USER_ACCOUNT_OR_PASSWORD_ERROR);
         }
-        dbAdmin.setPassword(account.getNewPassword());
-        adminMapper.updateById(dbAdmin);
+        dbStudent.setPassword(account.getNewPassword());
+        studentMapper.updateById(dbStudent);
+    }
+
+    public void register(Account account) {
+        Student student = new Student();
+        BeanUtils.copyProperties(account,student);
+        add( student);
     }
 }

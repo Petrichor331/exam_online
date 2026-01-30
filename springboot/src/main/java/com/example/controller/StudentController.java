@@ -2,8 +2,8 @@ package com.example.controller;
 
 
 import com.example.common.Result;
-import com.example.entity.Admin;
-import com.example.service.AdminService;
+import com.example.entity.Student;
+import com.example.service.StudentService;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
@@ -11,14 +11,15 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin")
-public class AdminController {
+@RequestMapping("/student")
+public class StudentController {
 
     @Resource
-    private AdminService adminService;
+    private StudentService studentService;
     @PostMapping("/add")
-    public Result add(@RequestBody Admin admin){
-        adminService.add(admin);
+    //对应后台管理那个页面里面的新增学生，不是注册
+    public Result add(@RequestBody Student student){
+        studentService.add(student);
         return Result.success();
     }
 
@@ -26,42 +27,42 @@ public class AdminController {
      * 分页查询
      */
     @GetMapping("/selectPage")
-    public Result selectPage(Admin admin,
+    public Result selectPage(Student student,
                             @RequestParam(defaultValue = "1") Integer pageNum,
                              @RequestParam(defaultValue = "10") Integer pageSize){
-        PageInfo<Admin> pageInfo =adminService.selectPage(admin,pageNum,pageSize);
+        PageInfo<Student> pageInfo =studentService.selectPage(student,pageNum,pageSize);
         return Result.success(pageInfo);
     }
 
 
     @GetMapping("/selectById/{id}")
     public Result selectById(@PathVariable Integer id){
-        Admin admin = adminService.selectById(id);
-        return Result.success(admin);
+        Student student = studentService.selectById(id);
+        return Result.success(student);
     }
 
     @GetMapping("/selectAll")
     //不管前端填了什么，都会返回所有数据
-    public Result selectAll(Admin admin){
-        List<Admin> list = adminService.selectAll(admin);
+    public Result selectAll(Student student){
+        List<Student> list = studentService.selectAll(student);
         return Result.success(list);
     }
 
     @PutMapping("/update")
-    public Result update(@RequestBody Admin admin){
-        adminService.updateById(admin);
+    public Result update(@RequestBody Student student){
+        studentService.updateById(student);
         return Result.success();
     }
 
     @DeleteMapping("/delete/batch")
     public Result delete(@RequestBody List<Integer> ids){
-        adminService.deleteBatch(ids);
+        studentService.deleteBatch(ids);
         return Result.success();
     }
 
     @DeleteMapping("/delete/{id}")
     public Result delete(@PathVariable Integer id){
-        adminService.deleteById(id);
+        studentService.deleteById(id);
         return Result.success();
     }
 

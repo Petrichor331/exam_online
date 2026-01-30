@@ -1,18 +1,18 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.mapper.NoticeMapper">
+<mapper namespace="com.example.mapper.ExamPlanMapper">
 
-    <select id="selectAll" resultType="com.example.entity.Notice">
-        select * from `notice`
+    <select id="selectAll" resultType="com.example.entity.ExamPlan">
+        select * from `exam_plan`
         <where>
             <if test="title != null"> and title like concat('%', #{title}, '%')</if>
         </where>
     </select>
 
-    <!-- insert into notice (username, password, ...) values ('notice', 'notice', ...) -->
-    <insert id="insert" parameterType="com.example.entity.Notice" useGeneratedKeys="true">
-        insert into `notice`
+    <!-- insert into exam_plan (username, password, ...) values ('exam_plan', 'exam_plan', ...) -->
+    <insert id="insert" parameterType="com.example.entity.ExamPlan" useGeneratedKeys="true">
+        insert into `exam_plan`
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
             <if test="title != null">title,</if>
@@ -29,12 +29,12 @@
         </trim>
     </insert>
 
-    <delete id="deleteById" parameterType="com.example.entity.Notice">
-        delete from `notice` where id = #{id}
+    <delete id="deleteById" parameterType="com.example.entity.ExamPlan">
+        delete from `exam_plan` where id = #{id}
     </delete>
 
-    <update id="updateById" parameterType="com.example.entity.Notice">
-        update `notice`
+    <update id="updateById" parameterType="com.example.entity.ExamPlan">
+        update `exam_plan`
         <set>
             <if test="title != null">title = #{title},</if>
             <if test="content != null">content = #{content},</if>

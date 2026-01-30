@@ -174,11 +174,11 @@ const baseUrl = import.meta.env.VITE_BASE_URL
 const rules = {
   title: [
     { required: true, message: '请输入公告标题', trigger: 'blur' },
-    { min: 2, max: 100, message: '长度在 2 到 100 个字符', trigger: 'blur' }
+    { min: 1, max: 100, message: '长度在 1 到 100 个字符', trigger: 'blur' }
   ],
   content: [
     { required: true, message: '请输入公告内容', trigger: 'blur' },
-    { min: 5, max: 500, message: '长度在 5 到 500 个字符', trigger: 'blur' }
+    { min: 0, max: 500, message: '长度在 0 到 500 个字符', trigger: 'blur' }
   ]
 }
 

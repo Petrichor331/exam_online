@@ -1,47 +1,70 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.mapper.NoticeMapper">
+<mapper namespace="com.example.mapper.QuestionOptionMapper">
 
-    <select id="selectAll" resultType="com.example.entity.Notice">
-        select * from `notice`
-        <where>
-            <if test="title != null"> and title like concat('%', #{title}, '%')</if>
-        </where>
-    </select>
 
-    <!-- insert into notice (username, password, ...) values ('notice', 'notice', ...) -->
-    <insert id="insert" parameterType="com.example.entity.Notice" useGeneratedKeys="true">
-        insert into `notice`
-        <trim prefix="(" suffix=")" suffixOverrides=",">
-            <if test="id != null">id,</if>
-            <if test="title != null">title,</if>
-            <if test="content != null">content,</if>
-            <if test="time != null">time,</if>
 
-        </trim>
-        <trim prefix="values (" suffix=")" suffixOverrides=",">
-            <if test="id != null">#{id},</if>
-            <if test="title != null">#{title},</if>
-            <if test="content != null">#{content},</if>
-            <if test="time != null">#{time},</if>
+    <!-- insert into questionOption (username, password, ...) values ('questionOption', 'questionOption', ...) -->
+<!--    <insert id="insert" parameterType="com.example.entity.QuestionOption" useGeneratedKeys="true">-->
+<!--        insert into `questionOption`-->
+<!--        <trim prefix="(" suffix=")" suffixOverrides=",">-->
+<!--            <if test="id != null">id,</if>-->
+<!--            <if test="questionId != null">question_id,</if>-->
+<!--            <if test="optionLabel != null">option_label,</if>-->
+<!--            <if test="optionContent != null">option_content,</if>-->
+<!--            <if test="isCorrect != null">is_correct,</if>-->
 
-        </trim>
+<!--        </trim>-->
+<!--        <trim prefix="values (" suffix=")" suffixOverrides=",">-->
+<!--            <if test="id != null">#{id},</if>-->
+<!--            <if test="questionId != null">#{questionId},</if>-->
+<!--            <if test="optionLabel != null">#{optionLabel},</if>-->
+<!--            <if test="optionContent != null">#{optionContent},</if>-->
+<!--            <if test="isCorrect != null">#{isCorrect},</if>-->
+
+<!--        </trim>-->
+<!--    </insert>-->
+
+    <!-- 单条插入：建议去掉动态判断，直接插入所有字段 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        insert into `question_option` (
+            question_id,
+            option_label,
+            option_content,
+            is_correct
+        ) values (
+                     #{questionId},
+                     #{optionLabel},
+                     #{optionContent},
+                     #{isCorrect}
+                 )
     </insert>
 
-    <delete id="deleteById" parameterType="com.example.entity.Notice">
-        delete from `notice` where id = #{id}
+    <!-- 批量插入：必须用固定字段 -->
+    <insert id="insertBatch">
+        insert into `question_option` (
+        question_id,
+        option_label,
+        option_content,
+        is_correct
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.questionId},
+            #{item.optionLabel},
+            #{item.optionContent},
+            #{item.isCorrect}
+            )
+        </foreach>
+    </insert>
+
+    <delete id="deleteByQuestionId">
+        delete from `question_option` where question_id = #{questionId}
     </delete>
 
-    <update id="updateById" parameterType="com.example.entity.Notice">
-        update `notice`
-        <set>
-            <if test="title != null">title = #{title},</if>
-            <if test="content != null">content = #{content},</if>
-            <if test="time != null">time = #{time},</if>
-
-        </set>
-        where id = #{id}
-    </update>
+    <select id="selectByQuestionId" resultType="com.example.entity.QuestionOption">
+        select * from `question_option` where question_id = #{questionId}
+    </select>
 
 </mapper>

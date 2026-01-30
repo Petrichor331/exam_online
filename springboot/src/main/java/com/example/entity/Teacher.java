@@ -1,6 +1,6 @@
 package com.example.entity;
 
-public class Admin extends Account{
+public class Teacher extends Account{
     //主键id
     private Integer id;
     //账号

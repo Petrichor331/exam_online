@@ -1,6 +1,6 @@
 package com.example.entity;
 
-public class Notice {
+public class ExamPlan {
     private Integer id;
     private String title;
     private String content;

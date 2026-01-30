@@ -1,44 +1,98 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.mapper.NoticeMapper">
+<mapper namespace="com.example.mapper.QuestionMapper">
 
-    <select id="selectAll" resultType="com.example.entity.Notice">
-        select * from `notice`
+    <select id="selectPage" resultType="com.example.common.vo.QuestionListVO">
+        SELECT
+        q.id,
+        q.name,
+        c.name AS courseName,
+        qt.name AS typeName,
+        q.reference_answer AS referenceAnswer,
+        q.score,
+
+        -- 把选项拼成一行，如果无选项则显示相应提示
+        CASE 
+            WHEN q.type_id IN (1, 2) THEN 
+                IFNULL(
+                    GROUP_CONCAT(
+                        CONCAT(o.option_label, '.', o.option_content)
+                        ORDER BY o.option_label
+                        SEPARATOR '；'
+                    ),
+                    '暂无选项'
+                )
+            ELSE '非选择题'
+        END AS optionsText
+
+        FROM question q
+        LEFT JOIN course c ON q.course_id = c.id
+        LEFT JOIN question_type qt ON q.type_id = qt.id
+        LEFT JOIN question_option o ON q.id = o.question_id
+
         <where>
-            <if test="title != null"> and title like concat('%', #{title}, '%')</if>
+            <if test="name != null and name != ''">
+                AND q.name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+
+        GROUP BY q.id
+        ORDER BY q.id DESC
+    </select>
+
+
+    <select id="selectAll" resultType="com.example.entity.Question">
+        select * from `question`
+        <where>
+            <if test="name != null"> and name like concat('%', #{name}, '%')</if>
         </where>
     </select>
 
-    <!-- insert into notice (username, password, ...) values ('notice', 'notice', ...) -->
-    <insert id="insert" parameterType="com.example.entity.Notice" useGeneratedKeys="true">
-        insert into `notice`
+    <!-- insert into question (username, password, ...) values ('question', 'question', ...) -->
+    <insert id="insert" parameterType="com.example.entity.Question" useGeneratedKeys="true">
+        insert into `question`
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
-            <if test="title != null">title,</if>
-            <if test="content != null">content,</if>
-            <if test="time != null">time,</if>
+            <if test="name != null">name,</if>
+            <if test="courseId != null">course_id,</if>
+            <if test="teacherId != null">teacher_id,</if>
+            <if test="typeId != null">type_id,</if>
+            <if test="difficulty != null">difficulty,</if>
+            <if test="knowledgePoint != null">knowledge_point,</if>
+            <if test="referenceAnswer != null">reference_answer,</if>
+            <if test="score != null">score,</if>
 
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
-            <if test="title != null">#{title},</if>
-            <if test="content != null">#{content},</if>
-            <if test="time != null">#{time},</if>
+            <if test="name != null">#{name},</if>
+            <if test="courseId != null">#{courseId},</if>
+            <if test="teacherId != null">#{teacherId},</if>
+            <if test="typeId != null">#{typeId},</if>
+            <if test="difficulty != null">#{difficulty},</if>
+            <if test="knowledgePoint != null">#{knowledgePoint},</if>
+            <if test="referenceAnswer != null">#{referenceAnswer},</if>
+            <if test="score != null">#{score},</if>
 
         </trim>
     </insert>
 
-    <delete id="deleteById" parameterType="com.example.entity.Notice">
-        delete from `notice` where id = #{id}
+    <delete id="deleteById" parameterType="com.example.entity.Question">
+        delete from `question` where id = #{id}
     </delete>
 
-    <update id="updateById" parameterType="com.example.entity.Notice">
-        update `notice`
+    <update id="updateById" parameterType="com.example.entity.Question">
+        update `question`
         <set>
-            <if test="title != null">title = #{title},</if>
-            <if test="content != null">content = #{content},</if>
-            <if test="time != null">time = #{time},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="courseId != null">course_id = #{courseId},</if>
+            <if test="teacherId != null">teacher_id = #{teacherId},</if>
+            <if test="typeId != null">type_id= #{typeId},</if>
+            <if test="difficulty != null">difficulty = #{difficulty},</if>
+            <if test="knowledgePoint != null">knowledge_point = #{knowledgePoint},</if>
+            <if test="referenceAnswer != null">reference_answer = #{referenceAnswer},</if>
+            <if test="score != null">score = #{score},</if>
 
         </set>
         where id = #{id}

@@ -1,21 +1,20 @@
 package com.example.mapper;
 
-import com.example.entity.Notice;
-import com.example.entity.Notice;
+import com.example.entity.Course;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
-public interface NoticeMapper {
+public interface CourseMapper {
 
-    int insert(Notice notice);
+    int insert(Course course);
 
-    List<Notice> selectAll(Notice notice);
+    List<Course> selectAll(Course course);
 
-    void updateById(Notice notice);
+    void updateById(Course course);
 
     void deleteById(Integer id);
 
-    @Select("select * from `notice` where id=#{id}")
-    Notice selectById(Integer id);
+    @Select("select * from `course` where id=#{id}")
+    Course selectById(Integer id);
 }

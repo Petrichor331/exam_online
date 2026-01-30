@@ -4,9 +4,9 @@
     <div class="search-card">
       <div class="search-left">
         <el-input
-            v-model="data.title"
+            v-model="data.name"
             :prefix-icon="Search"
-            placeholder="请输入公告标题搜索..."
+            placeholder="请输入题型名称进行搜索..."
             class="search-input"
             clearable
             @keyup.enter="load"
@@ -24,7 +24,7 @@
     <!-- 操作按钮区域 -->
     <div class="toolbar-card">
       <div class="toolbar-left">
-        <el-button type="primary" :icon="Plus" @click="handleAdd">新增公告</el-button>
+        <el-button type="primary" :icon="Plus" @click="handleAdd">新增题型</el-button>
         <el-button type="danger" plain :icon="Delete" @click="delBatch" :disabled="!data.ids.length">
           批量删除
           <el-tag v-if="data.ids.length" type="danger" effect="dark" size="small" class="batch-tag">
@@ -50,22 +50,21 @@
           :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: 'bold' }"
       >
         <el-table-column type="selection" width="55" align="center" />
-        <el-table-column prop="title" label="公告标题" min-width="200" show-overflow-tooltip>
+        <el-table-column prop="name" label="题型名称" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
-            <div class="title-cell">
-              <el-icon class="title-icon"><Bell /></el-icon>
-              <span class="title-text">{{ row.title }}</span>
+            <div class="name-cell">
+              <el-icon class="name-icon"><Document /></el-icon>
+              <span class="name-text">{{ row.name }}</span>
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="content" label="公告内容" min-width="300" show-overflow-tooltip>
+        <el-table-column prop="score" label="题型分数" min-width="300" show-overflow-tooltip>
           <template #default="{ row }">
-            <span class="content-text">{{ row.content }}</span>
+            <span class="content-text">{{ row.score }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="time" label="发布时间" width="180" align="center">
 
-        </el-table-column>
+
         <el-table-column label="操作" width="120" fixed="right" align="center">
           <template #default="{ row }">
             <el-button
@@ -86,7 +85,7 @@
       </el-table>
 
       <!-- 空状态 -->
-      <el-empty v-if="!data.tableData.length && !data.loading" description="暂无公告数据" />
+      <el-empty v-if="!data.tableData.length && !data.loading" description="暂无题型数据" />
     </div>
 
     <!-- 分页区域 -->
@@ -105,7 +104,7 @@
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog
-        :title="data.form.id ? '编辑公告' : '新增公告'"
+        :name="data.form.id ? '编辑题型' : '新增题型'"
         v-model="data.formVisible"
         width="600px"
         destroy-on-close
@@ -119,22 +118,20 @@
           label-width="80px"
           class="notice-form"
       >
-        <el-form-item prop="title" label="公告标题">
+        <el-form-item prop="name" label="题型名称">
           <el-input
-              v-model="data.form.title"
-              placeholder="请输入公告标题"
+              v-model="data.form.name"
+              placeholder="请输入题型名称"
               maxlength="100"
               show-word-limit
               :prefix-icon="Document"
           />
         </el-form-item>
-        <el-form-item prop="content" label="公告内容">
+        <el-form-item prop="score" label="题型分数">
           <el-input
-              type="textarea"
-              :rows="6"
-              v-model="data.form.content"
-              placeholder="请输入公告内容..."
-              maxlength="500"
+              v-model="data.form.score"
+              placeholder="请输入题型分数..."
+              maxlength="10"
               show-word-limit
               resize="none"
           />
@@ -172,14 +169,11 @@ const baseUrl = import.meta.env.VITE_BASE_URL
 
 // 表单校验规则
 const rules = {
-  title: [
-    { required: true, message: '请输入公告标题', trigger: 'blur' },
+  name: [
+    { required: true, message: '请输入题型名称', trigger: 'blur' },
     { min: 1, max: 100, message: '长度在 1 到 100 个字符', trigger: 'blur' }
   ],
-  content: [
-    { required: true, message: '请输入公告内容', trigger: 'blur' },
-    { min: 0, max: 500, message: '长度在 0 到 500 个字符', trigger: 'blur' }
-  ]
+
 }
 
 const data = reactive({
@@ -189,7 +183,7 @@ const data = reactive({
   pageNum: 1,
   pageSize: 10,
   total: 0,
-  title: '',
+  name: '',
   ids: [],
   loading: false,
   saving: false
@@ -201,11 +195,11 @@ const data = reactive({
 const load = async () => {
   data.loading = true
   try {
-    const res = await request.get('/notice/selectPage', {
+    const res = await request.get('/questionType/selectPage', {
       params: {
         pageNum: data.pageNum,
         pageSize: data.pageSize,
-        title: data.title
+        name: data.name
       }
     })
     if (res.code === '200') {
@@ -233,7 +227,7 @@ const handleDelete = (id) => {
   ElMessageBox.confirm(
       '<div style="text-align: center; padding: 20px 0;">' +
       '<i class="el-icon" style="font-size: 48px; color: #f56c6c; margin-bottom: 16px;"><svg viewBox="0 0 1024 1024"><path fill="#f56c6c" d="M512 64a448 448 0 1 1 0 896 448 448 0 0 1 0-896zm0 832a384 384 0 1 0 0-768 384 384 0 0 0 0 768zm48-384a48 48 0 1 1-96 0 48 48 0 0 1 96 0zm-48-208a48 48 0 0 1 48 48v176a48 48 0 0 1-96 0V352a48 48 0 0 1 48-48z"/></svg></i>' +
-      '<div style="font-size: 16px; color: #303133; margin-bottom: 8px;">确定删除该公告吗？</div>' +
+      '<div style="font-size: 16px; color: #303133; margin-bottom: 8px;">确定删除该题型吗？</div>' +
       '<div style="font-size: 13px; color: #909399;">删除后无法恢复，请谨慎操作</div>' +
       '</div>',
       '删除确认',
@@ -246,7 +240,7 @@ const handleDelete = (id) => {
         center: true
       }
   ).then(() => {
-    request.delete('/notice/delete/' + id).then(res => {
+    request.delete('/questionType/delete/' + id).then(res => {
       if (res.code === '200') {
         ElMessage.success('删除成功')
         load()
@@ -273,7 +267,7 @@ const delBatch = () => {
         type: 'warning'
       }
   ).then(() => {
-    request.delete('/notice/delete/batch', { data: data.ids }).then(res => {
+    request.delete('/questionType/delete/batch', { data: data.ids }).then(res => {
       if (res.code === '200') {
         ElMessage.success('批量删除成功')
         load()
@@ -291,7 +285,7 @@ const handleSelectionChange = (rows) => {
 const add = async () => {
   data.saving = true
   try {
-    const res = await request.post('/notice/add', data.form)
+    const res = await request.post('/questionType/add', data.form)
     if (res.code === '200') {
       ElMessage.success('新增成功')
       data.formVisible = false
@@ -307,7 +301,7 @@ const add = async () => {
 const update = async () => {
   data.saving = true
   try {
-    const res = await request.put('/notice/update', data.form)
+    const res = await request.put('/questionType/update', data.form)
     if (res.code === '200') {
       ElMessage.success('修改成功')
       data.formVisible = false
@@ -329,7 +323,7 @@ const save = () => {
 }
 
 const reset = () => {
-  data.title = ''
+  data.name = ''
   data.pageNum = 1
   load()
 }
@@ -394,18 +388,18 @@ load()
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
 }
 
-.title-cell {
+.name-cell {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.title-icon {
+.name-icon {
   color: #89cff0;
   font-size: 16px;
 }
 
-.title-text {
+.name-text {
   font-weight: 500;
   color: #303133;
 }
