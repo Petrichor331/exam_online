@@ -49,7 +49,7 @@
           highlight-current-row
           :header-cell-style="{ background: '#f5f7fa', color: '#606266', fontWeight: 'bold' }"
       >
-        <el-table-column type="selection" width="55" align="center"/>
+        <el-table-column type="selection" width="40" align="center"/>
         <el-table-column prop="name" label="题干" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
             <div class="name-cell">
@@ -60,12 +60,12 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="courseName" label="课程名称" min-width="300" show-overflow-tooltip>
+        <el-table-column prop="courseName" label="课程名称" min-width="180" show-overflow-tooltip>
           <template #default="{ row }">
             <span class="content-text">{{ row.courseName }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="选项内容" min-width="260">
+        <el-table-column label="选项内容" min-width="150">
           <template #default="{ row }">
             <div v-if="row.optionsText && row.optionsText !== '非选择题'" class="options-content">
               {{ row.optionsText }}
@@ -76,7 +76,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="typeName" label="题型" width="180" align="center">
+        <el-table-column prop="typeName" label="题型" width="150" align="center">
           <template #default="{ row }">
             <span class="content-text">{{ row.typeName }}</span>
           </template>

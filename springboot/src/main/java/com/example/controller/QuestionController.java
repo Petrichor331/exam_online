@@ -21,18 +21,18 @@ public class QuestionController {
     private QuestionService questionService;
 
     @PostMapping("/add")
-    public Result add(@RequestBody Question question){
-        questionService.add(question);
+    public Result add(@RequestBody QuestionAddDTO questionAddDTO){
+        questionService.addWithOptions(questionAddDTO);
         return Result.success();
     }
     @GetMapping("/selectPage")
-    public PageInfo<QuestionListVO> selectPage(
+    public Result selectPage(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
             @RequestParam(required = false) String name
     ) {
         PageInfo<QuestionListVO> questionListVO = questionService.selectPage(pageNum, pageSize, name);
-        return questionListVO;
+        return Result.success(questionListVO);
     }
     @GetMapping("/selectById/{id}")
     public Result selectById(@PathVariable Integer id){
@@ -47,12 +47,11 @@ public class QuestionController {
         return Result.success(list);
     }
 
-//    @PutMapping("/update")
-//    public Result update(@RequestBody QuestionAddDTO questionAddDTO){
-//
-//        questionService.updateById();
-//        return Result.success();
-//    }
+    @PutMapping("/update")
+    public Result update(@RequestBody QuestionAddDTO questionAddDTO){
+        questionService.updateWithOptions(questionAddDTO);
+        return Result.success();
+    }
 
     @DeleteMapping("/delete/{id}")
     public Result delete(@PathVariable Integer id){
