@@ -15,14 +15,6 @@ public class QuestionAddDTO {
     // 选择题选项（非选择题可为空）
     private List<QuestionOptionDTO> options;
 
-    public List<QuestionOptionDTO> getOptions() {
-        return options;
-    }
-
-    public void setOptions(List<QuestionOptionDTO> options) {
-        this.options = options;
-    }
-
     public String getReferenceAnswer() {
         return referenceAnswer;
     }

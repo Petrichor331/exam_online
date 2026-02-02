@@ -3,12 +3,14 @@ package com.example.service;
 
 import cn.hutool.core.date.DateUtil;
 import com.example.common.Constants;
+import com.example.common.dto.QuestionAddDTO;
 import com.example.common.enums.ResultCodeEnum;
 import com.example.common.enums.RoleEnum;
+import com.example.common.vo.QuestionListVO;
 import com.example.entity.Account;
-import com.example.entity.Notice;
+import com.example.entity.Question;
 import com.example.exception.CustomException;
-import com.example.mapper.NoticeMapper;
+import com.example.mapper.QuestionMapper;
 import com.example.utils.TokenUtils;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -20,39 +22,38 @@ import java.util.Date;
 import java.util.List;
 
 @Service
-public class NoticeService {
+public class QuestionService {
     @Resource
-    private NoticeMapper noticeMapper;
+    private QuestionMapper questionMapper;
 
-    public void add(Notice notice) {
-        notice.setTime(DateUtil.now());
-        noticeMapper.insert(notice);
+    public void add(Question question) {
+        questionMapper.insert(question);
     }
-    public PageInfo<Notice> selectPage(Notice notice, Integer pageNum, Integer pageSize) {
+    public PageInfo<QuestionListVO> selectPage(Integer pageNum, Integer pageSize,String name) {
         PageHelper.startPage(pageNum, pageSize);
-        List<Notice> list = noticeMapper.selectAll(notice);
+        List<QuestionListVO> list = questionMapper.selectPage(name);
         return PageInfo.of(list);
     }
 
-    public List<Notice> selectAll(Notice notice) {
-        return noticeMapper.selectAll(notice);
+    public List<Question> selectAll(Question question) {
+        return questionMapper.selectAll(question);
     }
 
-    public Notice selectById(Integer id) {
-        return noticeMapper.selectById(id);
+    public Question selectById(Integer id) {
+        return questionMapper.selectById(id);
     }
 
-    public void updateById(Notice notice) {
-        noticeMapper.updateById(notice);
+    public void updateById(Question question) {
+        questionMapper.updateById(question);
     }
 
     public void deleteById(Integer id) {
-        noticeMapper.deleteById(id);
+        questionMapper.deleteById(id);
     }
 
     public void deleteBatch(List<Integer> ids) {
         for (Integer id : ids) {
-            noticeMapper.deleteById(id);
+            questionMapper.deleteById(id);
         }
     }
 
