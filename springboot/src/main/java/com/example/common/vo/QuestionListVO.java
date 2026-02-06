@@ -9,9 +9,12 @@ public class QuestionListVO {
     private Integer id;
     private String name;
     private String courseName;
+    private Integer typeId;
     private String typeName;
     private String optionsText;
     private String referenceAnswer;
     private String score;
+    private Integer difficulty;
+    private String knowledgePoint;
 
 }

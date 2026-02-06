@@ -71,8 +71,9 @@
 </template>
 
 <script setup>
-import router from "@/router/index.js";
 import {reactive} from "vue";
+import { useRouter } from 'vue-router';
+const router = useRouter();
 import {ElMessage} from "element-plus";
 import defaultAvatar from '@/assets/img/avatar.png'
 

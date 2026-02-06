@@ -33,7 +33,8 @@ import {Lock, User} from "@element-plus/icons-vue";
 import axios from "axios";
 import request from "@/utils/request.js";
 import {ElMessage} from "element-plus";
-import router from "@/router/index.js";
+import { useRouter } from 'vue-router';
+const router = useRouter();
 
 const data = reactive({
   form: {},

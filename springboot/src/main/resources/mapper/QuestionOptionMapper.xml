@@ -54,7 +54,7 @@
             #{item.questionId},
             #{item.optionLabel},
             #{item.optionContent},
-            #{item.isCorrect}
+            IFNULL(#{item.isCorrect}, false)
             )
         </foreach>
     </insert>

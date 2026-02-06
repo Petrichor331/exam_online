@@ -42,18 +42,37 @@ public class QuestionService {
         question.setCourseId(questionAddDTO.getCourseId());
         question.setTypeId(questionAddDTO.getTypeId());
         question.setScore(questionAddDTO.getScore());
-        question.setReferenceAnswer(questionAddDTO.getReferenceAnswer());
+        question.setDifficulty(questionAddDTO.getDifficulty());
+        question.setKnowledgePoint(questionAddDTO.getKnowledgePoint());
+        question.setReferenceAnswer(questionAddDTO.getReferenceAnswerString());
+        // 设置当前登录用户为出题教师
+        Account currentUser = TokenUtils.getCurrentUser();
+        if (currentUser != null) {
+            question.setTeacherId(currentUser.getId());
+        }
         
         questionMapper.insert(question);
         
         // 2. 如果是选择题，添加选项
         if (questionAddDTO.getOptions() != null && !questionAddDTO.getOptions().isEmpty()) {
+            Object referenceAnswer = questionAddDTO.getReferenceAnswer();
             List<QuestionOption> questionOptions = questionAddDTO.getOptions().stream()
                     .map(dto -> {
                         QuestionOption option = new QuestionOption();
                         option.setQuestionId(question.getId());
                         option.setOptionLabel(dto.getOptionLabel());
                         option.setOptionContent(dto.getOptionContent());
+                        // 根据参考答案判断该选项是否正确
+                        boolean isCorrect = false;
+                        if (referenceAnswer instanceof List) {
+                            // 多选题：检查选项label是否在答案列表中
+                            List<?> answerList = (List<?>) referenceAnswer;
+                            isCorrect = answerList.contains(dto.getOptionLabel());
+                        } else if (referenceAnswer instanceof String) {
+                            // 单选题：检查是否等于答案
+                            isCorrect = dto.getOptionLabel().equals(referenceAnswer);
+                        }
+                        option.setIsCorrect(isCorrect);
                         return option;
                     })
                     .toList();
@@ -86,7 +105,9 @@ public class QuestionService {
         question.setCourseId(questionAddDTO.getCourseId());
         question.setTypeId(questionAddDTO.getTypeId());
         question.setScore(questionAddDTO.getScore());
-        question.setReferenceAnswer(questionAddDTO.getReferenceAnswer());
+        question.setDifficulty(questionAddDTO.getDifficulty());
+        question.setKnowledgePoint(questionAddDTO.getKnowledgePoint());
+        question.setReferenceAnswer(questionAddDTO.getReferenceAnswerString());
         
         questionMapper.updateById(question);
         
@@ -96,12 +117,24 @@ public class QuestionService {
             questionOptionMapper.deleteByQuestionId(questionAddDTO.getId());
             
             // 再添加新选项
+            Object referenceAnswer = questionAddDTO.getReferenceAnswer();
             List<QuestionOption> questionOptions = questionAddDTO.getOptions().stream()
                     .map(dto -> {
                         QuestionOption option = new QuestionOption();
                         option.setQuestionId(questionAddDTO.getId());
                         option.setOptionLabel(dto.getOptionLabel());
                         option.setOptionContent(dto.getOptionContent());
+                        // 根据参考答案判断该选项是否正确
+                        boolean isCorrect = false;
+                        if (referenceAnswer instanceof List) {
+                            // 多选题：检查选项label是否在答案列表中
+                            List<?> answerList = (List<?>) referenceAnswer;
+                            isCorrect = answerList.contains(dto.getOptionLabel());
+                        } else if (referenceAnswer instanceof String) {
+                            // 单选题：检查是否等于答案
+                            isCorrect = dto.getOptionLabel().equals(referenceAnswer);
+                        }
+                        option.setIsCorrect(isCorrect);
                         return option;
                     })
                     .toList();

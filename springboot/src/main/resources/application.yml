@@ -8,6 +8,12 @@ spring:
     username: root
     password: root
     url: jdbc:mysql://localhost:3306/exam_online?useUnicode=true&characterEncoding=utf-8&allowMultiQueries=true&useSSL=false&serverTimezone=GMT%2b8&allowPublicKeyRetrieval=true
+  
+  # 文件上传大小配置
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 50MB
 
 # 配置mybatis实体和xml映射
 mybatis:

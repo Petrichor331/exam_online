@@ -8,9 +8,12 @@
         q.id,
         q.name,
         c.name AS courseName,
+        q.type_id AS typeId,
         qt.name AS typeName,
         q.reference_answer AS referenceAnswer,
         q.score,
+        q.difficulty,
+        q.knowledge_point AS knowledgePoint,
 
         -- 把选项拼成一行，如果无选项则显示相应提示
         CASE 
@@ -23,7 +26,7 @@
                     ),
                     '暂无选项'
                 )
-            ELSE '非选择题'
+            ELSE '暂无选项'
         END AS optionsText
 
         FROM question q
@@ -50,7 +53,7 @@
     </select>
 
     <!-- insert into question (username, password, ...) values ('question', 'question', ...) -->
-    <insert id="insert" parameterType="com.example.entity.Question" useGeneratedKeys="true">
+    <insert id="insert" parameterType="com.example.entity.Question" useGeneratedKeys="true" keyProperty="id">
         insert into `question`
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>

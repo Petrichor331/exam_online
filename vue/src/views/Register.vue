@@ -14,7 +14,8 @@
         </el-form-item>
         <el-form-item prop="role" style="margin-bottom: 35px">
           <el-select size="medium" v-model="data.form.role" placeholder="请选择角色">
-
+            <el-option label="学生" value="STUDENT"></el-option>
+            <el-option label="教师" value="TEACHER"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item>

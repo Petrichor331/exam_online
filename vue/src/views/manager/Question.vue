@@ -65,13 +65,15 @@
             <span class="content-text">{{ row.courseName }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="选项内容" min-width="150">
+        <el-table-column label="选项内容" min-width="260">
           <template #default="{ row }">
-            <div v-if="row.optionsText && row.optionsText !== '非选择题'" class="options-content">
+            <!-- 选择题：有选项显示选项，无选项显示"暂无选项" -->
+            <div v-if="row.typeId === 1 || row.typeId === 2" class="options-content" style="white-space: pre-wrap; line-height: 1.5;">
               {{ row.optionsText }}
             </div>
+            <!-- 非选择题：显示标签 -->
             <el-tag v-else type="info" size="small">
-              {{ row.optionsText || '无选项' }}
+              暂无选项
             </el-tag>
           </template>
         </el-table-column>
@@ -86,9 +88,21 @@
             <span class="content-text">{{ row.referenceAnswer }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="score" label="分值" width="180" align="center">
+        <el-table-column prop="score" label="分值" width="100" align="center">
           <template #default="{ row }">
             <span class="content-text">{{ row.score }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="knowledgePoint" label="知识点" width="150" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span class="content-text">{{ row.knowledgePoint || '-' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="difficulty" label="难度" width="120" align="center">
+          <template #default="{ row }">
+            <el-tag :type="getDifficultyType(row.difficulty)" size="small">
+              {{ difficultyLabels[row.difficulty] || row.difficulty }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right" align="center">
@@ -203,6 +217,35 @@
           />
         </el-form-item>
 
+        <!-- 知识点 -->
+        <el-form-item label="知识点" prop="knowledgePoint">
+          <el-input
+              v-model="data.form.knowledgePoint"
+              placeholder="请输入知识点，如：函数、微积分、几何等"
+              maxlength="100"
+              show-word-limit
+          />
+        </el-form-item>
+
+        <!-- 难度 -->
+        <el-form-item label="难度" prop="difficulty">
+          <div class="difficulty-wrapper">
+            <el-slider
+                v-model="data.form.difficulty"
+                :min="1"
+                :max="5"
+                :step="1"
+                show-stops
+                show-tooltip
+                :format-tooltip="(val) => difficultyLabels[val] || val"
+                style="flex: 1; margin-right: 15px;"
+            />
+            <el-tag :type="getDifficultyType(data.form.difficulty)" size="small" class="difficulty-tag">
+              {{ difficultyLabels[data.form.difficulty] || '请选择' }}
+            </el-tag>
+          </div>
+        </el-form-item>
+
         <!-- ================= 选择题选项 ================= -->
         <el-form-item
             v-if="isChoiceQuestion"
@@ -283,7 +326,7 @@
 
           <!-- 简答 -->
           <el-input
-              v-else-if="data.form.typeId === 4"
+              v-else-if="data.form.typeId === 5"
               type="textarea"
               :rows="3"
               v-model="data.form.referenceAnswer"
@@ -324,6 +367,21 @@ import dayjs from 'dayjs'
 const formRef = ref()
 const baseUrl = import.meta.env.VITE_BASE_URL
 
+// 难度标签映射
+const difficultyLabels = {
+  1: '非常简单',
+  2: '简单', 
+  3: '中等',
+  4: '困难',
+  5: '非常困难'
+}
+
+// 获取难度标签颜色
+const getDifficultyType = (val) => {
+  const types = { 1: 'success', 2: 'success', 3: 'warning', 4: 'danger', 5: 'danger' }
+  return types[val] || 'info'
+}
+
 // 表单校验规则
 const rules = {
   name: [
@@ -342,8 +400,12 @@ const rules = {
   referenceAnswer: [
     {required: true, message: '请输入标准答案', trigger: 'blur'}
   ],
-
-
+  knowledgePoint: [
+    {required: true, message: '请输入知识点', trigger: 'blur'}
+  ],
+  difficulty: [
+    {required: true, message: '请选择难度', trigger: 'change'}
+  ],
 
 }
 
@@ -356,7 +418,9 @@ const data = reactive({
     score: 0,
     referenceAnswer: '',
     options: [],
-    courseId: null
+    courseId: null,
+    knowledgePoint: '',
+    difficulty: 3
   },
   courseList: [],
   tableData: [],
@@ -401,7 +465,9 @@ const handleAdd = () => {
     score: 0,
     referenceAnswer: '',
     options: [],
-    courseId: null
+    courseId: null,
+    knowledgePoint: '',
+    difficulty: 3  // 默认中等难度
   }
   data.formVisible = true
 }
@@ -412,7 +478,8 @@ const isChoiceQuestion = computed(() => {
 })
 
 const handleTypeChange = () => {
-  data.form.referenceAnswer = ''
+  // 根据题型初始化答案：多选题为数组，其他为字符串
+  data.form.referenceAnswer = data.form.typeId === 2 ? [] : ''
   data.form.options = []
 
   if (isChoiceQuestion.value) {
@@ -448,6 +515,8 @@ const handleEdit = async (row) => {
         typeId: res.data.typeId,
         score: res.data.score,
         referenceAnswer: res.data.referenceAnswer,
+        knowledgePoint: res.data.knowledgePoint || '',
+        difficulty: Number(res.data.difficulty) || 3,
         options: [] // 初始化空数组
       }
       
@@ -739,6 +808,23 @@ load()
 .el-pagination.is-background .btn-prev:hover,
 .el-pagination.is-background .btn-next:hover {
   color: #ffb7c5;
+}
+
+/* 难度滑块样式 */
+.difficulty-wrapper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.difficulty-wrapper .el-slider {
+  flex: 1;
+  margin-right: 15px;
+}
+
+.difficulty-tag {
+  min-width: 80px;
+  text-align: center;
 }
 
 /* 响应式 */

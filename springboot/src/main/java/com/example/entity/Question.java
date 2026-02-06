@@ -4,9 +4,9 @@ public class Question {
     private Integer id;
     private String name;
     private Integer courseId;
-    private String teacherId;
+    private Integer teacherId;
     private Integer typeId;
-    private Double difficulty;
+    private Integer difficulty;
     private String knowledgePoint;
     private String referenceAnswer;
     private Integer score;
@@ -54,11 +54,11 @@ public class Question {
         this.name = name;
     }
 
-    public String getTeacherId() {
+    public Integer getTeacherId() {
         return teacherId;
     }
 
-    public void setTeacherId(String teacherId) {
+    public void setTeacherId(Integer teacherId) {
         this.teacherId = teacherId;
     }
 
@@ -70,11 +70,11 @@ public class Question {
         this.typeId = typeId;
     }
 
-    public Double getDifficulty() {
+    public Integer getDifficulty() {
         return difficulty;
     }
 
-    public void setDifficulty(Double difficulty) {
+    public void setDifficulty(Integer difficulty) {
         this.difficulty = difficulty;
     }
 

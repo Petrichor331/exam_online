@@ -56,6 +56,32 @@ const update = ()=>{
       }
     })
   }
+  if(data.user.role === 'TEACHER'){
+    request.put('/teacher/update', data.user).then(res=>{
+      if(res.code === '200'){
+        ElMessage.success('保存成功')
+        console.log('update 返回的 user:', res.data)
+        localStorage.setItem('xm-user', JSON.stringify(data.user))
+        emit('updateUser')
+        router.push('/manager/home')
+      }else{
+        ElMessage.error(res.msg)
+      }
+    })
+  }
+  if(data.user.role === 'STUDENT'){
+    request.put('/student/update', data.user).then(res=>{
+      if(res.code === '200'){
+        ElMessage.success('保存成功')
+        console.log('update 返回的 user:', res.data)
+        localStorage.setItem('xm-user', JSON.stringify(data.user))
+        emit('updateUser')
+        router.push('/student/home')
+      }else{
+        ElMessage.error(res.msg)
+      }
+    })
+  }
 }
 
 const data = reactive({
