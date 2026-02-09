@@ -41,8 +41,8 @@
 import {reactive} from "vue";
 import request from "@/utils/request.js";
 import {ElMessage} from "element-plus";
-import router from "@/router/index.js";
-
+import {useRouter} from "vue-router";
+const router = useRouter()
 const baseUrl = import.meta.env.VITE_BASE_URL
 
 const emit = defineEmits(['updateUser'])
@@ -54,12 +54,40 @@ const update = ()=>{
         console.log('update 返回的 user:', res.data)
         localStorage.setItem('xm-user', JSON.stringify(data.user))
         emit('updateUser')
-        // router.push('/manager/home')
+        router.push('/front/home')
       }else{
         ElMessage.error(res.msg)
       }
     })
   }
+  if(data.user.role === 'TEACHER'){
+    request.put('/teacher/update', data.user).then(res=>{
+      if(res.code === '200'){
+        ElMessage.success('保存成功')
+        console.log('update 返回的 user:', res.data)
+        localStorage.setItem('xm-user', JSON.stringify(data.user))
+        emit('updateUser')
+        router.push('/front/home')
+      }else{
+        ElMessage.error(res.msg)
+      }
+    })
+  }
+  if(data.user.role === 'STUDENT'){
+    request.put('/teacher/update', data.user).then(res=>{
+      if(res.code === '200'){
+        ElMessage.success('保存成功')
+        console.log('update 返回的 user:', res.data)
+        localStorage.setItem('xm-user', JSON.stringify(data.user))
+        emit('updateUser')
+        router.push('/front/home')
+      }else{
+        ElMessage.error(res.msg)
+      }
+    })
+  }
+
+
 }
 
 const data = reactive({

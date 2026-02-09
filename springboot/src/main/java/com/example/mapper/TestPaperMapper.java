@@ -1,5 +1,6 @@
 package com.example.mapper;
 
+import com.example.common.vo.TestPaperVO;
 import com.example.entity.TestPaper;
 import org.apache.ibatis.annotations.Select;
 
@@ -9,7 +10,7 @@ public interface TestPaperMapper {
 
     int insert(TestPaper testPaper);
 
-    List<TestPaper> selectAll(TestPaper testPaper);
+    List<TestPaperVO> selectAll(TestPaper testPaper);
 
     void updateById(TestPaper testPaper);
 

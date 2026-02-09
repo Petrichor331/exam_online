@@ -38,6 +38,14 @@
             <if test="name != null and name != ''">
                 AND q.name LIKE CONCAT('%', #{name}, '%')
             </if>
+            <if test="courseId != null">
+                    AND q.course_id = #{courseId}
+            </if>
+            <if test="typeId != null">
+                AND q.type_id = #{typeId}
+            </if>
+
+
         </where>
 
         GROUP BY q.id

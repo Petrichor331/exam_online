@@ -7,6 +7,9 @@ public class CustomException extends RuntimeException{
 
     private String code;
     private String msg;
+    public CustomException(String msg) {
+        this.msg = msg;
+    }
 
     public CustomException(String code, String msg) {
         this.code = code;

@@ -3,6 +3,7 @@ package com.example.controller;
 
 import com.example.common.Result;
 import com.example.common.dto.TestPaperAddDTO;
+import com.example.common.vo.TestPaperVO;
 import com.example.entity.TestPaper;
 import com.example.service.TestPaperService;
 import com.github.pagehelper.PageInfo;
@@ -30,7 +31,7 @@ public class TestPaperController {
     public Result selectPage(TestPaper testPaper,
                             @RequestParam(defaultValue = "1") Integer pageNum,
                              @RequestParam(defaultValue = "10") Integer pageSize){
-        PageInfo<TestPaper> pageInfo =testPaperService.selectPage(testPaper,pageNum,pageSize);
+        PageInfo<TestPaperVO> pageInfo = testPaperService.selectPage(testPaper,pageNum,pageSize);
         return Result.success(pageInfo);
     }
 
@@ -44,7 +45,7 @@ public class TestPaperController {
     @GetMapping("/selectAll")
     //不管前端填了什么，都会返回所有数据
     public Result selectAll(TestPaper testPaper){
-        List<TestPaper> list = testPaperService.selectAll(testPaper);
+        List<TestPaperVO> list = testPaperService.selectAll(testPaper);
         return Result.success(list);
     }
 

@@ -25,13 +25,20 @@ public class QuestionController {
         questionService.addWithOptions(questionAddDTO);
         return Result.success();
     }
+    @GetMapping("/getKnowledgePoints")
+    public Result getKnowledgePoints(@RequestParam Integer courseId){
+        List<String> list = questionService.selectKnowledgePoints(courseId);
+        return Result.success(list);
+    }
     @GetMapping("/selectPage")
     public Result selectPage(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
-            @RequestParam(required = false) String name
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Integer courseId,
+            @RequestParam(required = false) Integer typeId
     ) {
-        PageInfo<QuestionListVO> questionListVO = questionService.selectPage(pageNum, pageSize, name);
+        PageInfo<QuestionListVO> questionListVO = questionService.selectPage(pageNum, pageSize, name, courseId, typeId);
         return Result.success(questionListVO);
     }
     @GetMapping("/selectById/{id}")
@@ -39,6 +46,7 @@ public class QuestionController {
         Question question = questionService.selectById(id);
         return Result.success(question);
     }
+
 
     @GetMapping("/selectAll")
     //不管前端填了什么，都会返回所有数据

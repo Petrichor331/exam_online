@@ -3,11 +3,31 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.mapper.TestPaperMapper">
 
-    <select id="selectAll" resultType="com.example.entity.TestPaper">
-        select * from `test_paper`
+    <select id="selectAll" resultType="com.example.common.vo.TestPaperVO">
+        SELECT
+            tp.id,
+            tp.name as paperName,
+            c.name as courseName,
+            t.name as teacherName,
+            tp.type,
+            tp.start as startTime,
+            tp.end as endTime,
+            tp.time as duration,
+            -- 试卷状态：根据当前时间计算
+            CASE
+                WHEN NOW() &lt; tp.start THEN '未开始'
+                WHEN NOW() BETWEEN tp.start AND tp.end THEN '进行中'
+                ELSE '已结束'
+            END as status
+        FROM test_paper tp
+        LEFT JOIN course c ON tp.course_id = c.id
+        LEFT JOIN teacher t ON tp.teacher_id = t.id
         <where>
-            <if test="name != null"> and test_paper.name like concat('%', #{name}, '%')</if>
+            <if test="name != null and name != ''">
+                AND tp.name LIKE CONCAT('%', #{name}, '%')
+            </if>
         </where>
+        ORDER BY tp.id DESC
     </select>
 
     <!-- insert into test_paper (username, password, ...) values ('test_paper', 'test_paper', ...) -->

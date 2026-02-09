@@ -79,9 +79,9 @@ public class QuestionService {
             questionOptionMapper.insertBatch(questionOptions);
         }
     }
-    public PageInfo<QuestionListVO> selectPage(Integer pageNum, Integer pageSize,String name) {
+    public PageInfo<QuestionListVO> selectPage(Integer pageNum, Integer pageSize,String name,Integer courseId,Integer typeId) {
         PageHelper.startPage(pageNum, pageSize);
-        List<QuestionListVO> list = questionMapper.selectPage(name);
+        List<QuestionListVO> list = questionMapper.selectPage(name,courseId,typeId);
         return PageInfo.of(list);
     }
 
@@ -160,4 +160,8 @@ public class QuestionService {
         }
     }
 
+
+    public List<String> selectKnowledgePoints(Integer courseId) {
+        return questionMapper.selectKnowledgePoints(courseId);
+    }
 }

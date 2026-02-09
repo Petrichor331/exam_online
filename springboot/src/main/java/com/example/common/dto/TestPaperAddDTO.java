@@ -1,6 +1,8 @@
 package com.example.common.dto;
 
 
+import java.util.List;
+
 //出卷时前端传的那些参数,只负责试卷的基本信息，不涉及题目内容
 public class TestPaperAddDTO {
     private Integer courseId;//前端选课程，传id
@@ -9,6 +11,15 @@ public class TestPaperAddDTO {
     private String endTime;
     private Integer duration;   // 考试时长
     private String generateType; // 出卷方式
+    private List< Integer> questionIds;
+
+    public List<Integer> getQuestionIds() {
+        return questionIds;
+    }
+
+    public void setQuestionIds(List<Integer> questionIds) {
+        this.questionIds = questionIds;
+    }
 
     public Integer getCourseId() {
         return courseId;
