@@ -6,7 +6,7 @@ import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
-public interface ScoreMapper {
+public interface StudentAnswerMapper {
 
     int insert(Score score);
 
