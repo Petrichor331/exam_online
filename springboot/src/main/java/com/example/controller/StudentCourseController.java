@@ -1,101 +1,93 @@
 package com.example.controller;
 
 import com.example.common.Result;
-import com.example.common.dto.SaveAnswerDTO;
-import com.example.common.dto.StartExamDTO;
-import com.example.common.vo.HomeDataVO;
-import com.example.common.vo.StartExamVO;
 import com.example.entity.Account;
-import com.example.service.ExamService;
+import com.example.entity.StudentCourse;
+import com.example.service.StudentCourseService;
 import com.example.utils.TokenUtils;
 import jakarta.annotation.Resource;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
- * 考试Controller
+ * 选课Controller
  */
-@Slf4j
 @RestController
-@RequestMapping("/exam")
-public class ExamController {
+@RequestMapping("/studentCourse")
+public class StudentCourseController {
     
     @Resource
-    private ExamService examService;
+    private StudentCourseService studentCourseService;
     
     /**
-     * 获取首页数据
-     * 返回：进行中的考试、待考科目、最近成绩
+     * 选课
      */
-    @GetMapping("/home")
-    public Result getHomeData() {
+    @PostMapping("/select/{courseId}")
+    public Result selectCourse(@PathVariable Integer courseId) {
         try {
             Account currentUser = TokenUtils.getCurrentUser();
             if (currentUser == null || !"STUDENT".equalsIgnoreCase(currentUser.getRole())) {
                 return Result.error("请先登录学生账号");
             }
             
-            HomeDataVO homeData = examService.getHomeData(currentUser.getId());
-            return Result.success(homeData);
+            studentCourseService.selectCourse(currentUser.getId(), courseId);
+            return Result.success("选课成功");
         } catch (Exception e) {
-            log.error("获取首页数据失败", e);
-            return Result.error("获取数据失败：" + e.getMessage());
-        }
-    }
-    
-    /**
-     * 开始考试
-     */
-    @PostMapping("/start")
-    public Result startExam(@RequestBody StartExamDTO dto) {
-        try {
-            Account currentUser = TokenUtils.getCurrentUser();
-            if (currentUser == null || !"STUDENT".equalsIgnoreCase(currentUser.getRole())) {
-                return Result.error("请先登录学生账号");
-            }
-
-            StartExamVO startExamVO = examService.startExam(currentUser.getId(), dto.getPaperId());
-            return Result.success(startExamVO);
-        } catch (Exception e) {
-            log.error("开始考试失败", e);
             return Result.error(e.getMessage());
         }
     }
     
     /**
-     * 批量保存答案（交卷时调用）
+     * 退课
      */
-    @PostMapping("/save-answers")
-    public Result saveAnswers(@RequestBody SaveAnswerDTO dto) {
+    @PostMapping("/drop/{courseId}")
+    public Result dropCourse(@PathVariable Integer courseId) {
         try {
             Account currentUser = TokenUtils.getCurrentUser();
             if (currentUser == null || !"STUDENT".equalsIgnoreCase(currentUser.getRole())) {
                 return Result.error("请先登录学生账号");
             }
             
-            examService.saveAnswers(currentUser.getId(), dto.getPaperId(), dto);
-            return Result.success();
+            studentCourseService.dropCourse(currentUser.getId(), courseId);
+            return Result.success("退课成功");
         } catch (Exception e) {
-            log.error("保存答案失败", e);
             return Result.error(e.getMessage());
         }
     }
     
     /**
-     * 提交试卷
+     * 获取我的选课列表
      */
-    @PostMapping("/submit/{scoreId}")
-    public Result submitExam(@PathVariable Integer scoreId) {
+    @GetMapping("/my-courses")
+    public Result getMyCourses() {
         try {
             Account currentUser = TokenUtils.getCurrentUser();
             if (currentUser == null || !"STUDENT".equalsIgnoreCase(currentUser.getRole())) {
                 return Result.error("请先登录学生账号");
             }
             
-            examService.submitExam(scoreId);
-            return Result.success("试卷提交成功，正在评分中...");
+            List<StudentCourse> courses = studentCourseService.getMyCourses(currentUser.getId());
+            return Result.success(courses);
         } catch (Exception e) {
-            log.error("提交试卷失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 检查是否已选某课程
+     */
+    @GetMapping("/check/{courseId}")
+    public Result checkSelected(@PathVariable Integer courseId) {
+        try {
+            Account currentUser = TokenUtils.getCurrentUser();
+            if (currentUser == null || !"STUDENT".equalsIgnoreCase(currentUser.getRole())) {
+                return Result.error("请先登录学生账号");
+            }
+            
+            boolean selected = studentCourseService.hasSelected(currentUser.getId(), courseId);
+            return Result.success(selected);
+        } catch (Exception e) {
             return Result.error(e.getMessage());
         }
     }

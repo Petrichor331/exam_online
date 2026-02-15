@@ -50,32 +50,30 @@
     <!-- 快捷入口 -->
     <div class="section quick-access">
       <div class="quick-grid">
-        <div class="quick-item" @click="goTo('/front/exams')">
+        <div class="quick-item" @click="goTo('/front/course')">
           <div class="quick-icon blue">
+            <el-icon><Reading /></el-icon>
+          </div>
+          <div class="quick-text">课程中心</div>
+        </div>
+        <div class="quick-item" @click="goTo('/front/myCourse')">
+          <div class="quick-icon green">
             <el-icon><Collection /></el-icon>
+          </div>
+          <div class="quick-text">我的课程</div>
+        </div>
+        <div class="quick-item" @click="goTo('/front/exam/:paperId')">
+          <div class="quick-icon orange">
+            <el-icon><Document /></el-icon>
           </div>
           <div class="quick-text">全部考试</div>
         </div>
         <div class="quick-item" @click="goTo('/front/practice')">
-          <div class="quick-icon green">
+          <div class="quick-icon purple">
             <el-icon><EditPen /></el-icon>
           </div>
           <div class="quick-text">模拟练习</div>
         </div>
-        <!-- 错题回顾和成绩分析模块暂时注释掉
-        <div class="quick-item" @click="goTo('/front/wrong')">
-          <div class="quick-icon orange">
-            <el-icon><CircleClose /></el-icon>
-          </div>
-          <div class="quick-text">错题回顾</div>
-        </div>
-        <div class="quick-item" @click="goTo('/front/score')">
-          <div class="quick-icon purple">
-            <el-icon><TrendCharts /></el-icon>
-          </div>
-          <div class="quick-text">成绩分析</div>
-        </div>
-        -->
       </div>
     </div>
 
@@ -165,10 +163,12 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import request from '@/utils/request.js'
+import { ElMessage } from 'element-plus'
 import {
   Timer, Document, Star, User, ArrowRight,
   Collection, EditPen, CircleClose, TrendCharts,
-  Calendar, Clock, Trophy, Lightning
+  Calendar, Clock, Trophy, Lightning, Reading
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -186,90 +186,46 @@ const currentDate = computed(() => {
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${weekDays[date.getDay()]}`
 })
 
-// 假数据 - 进行中的考试
-const ongoingExams = ref([
-  {
-    id: 1,
-    name: '高等数学期中考试',
-    questionCount: 20,
-    totalScore: 100,
-    teacherName: '张教授',
-    remainingMinutes: 45,
-    remainingSeconds: 45 * 60
-  },
-  {
-    id: 2,
-    name: '大学英语期末考试',
-    questionCount: 50,
-    totalScore: 100,
-    teacherName: '李老师',
-    remainingMinutes: 25,
-    remainingSeconds: 25 * 60
-  }
-])
+// 数据
+const ongoingExams = ref([])
+const upcomingExams = ref([])
+const recentScores = ref([])
+const loading = ref(false)
 
-// 假数据 - 待考科目
-const upcomingExams = ref([
-  {
-    id: 3,
-    name: '线性代数测试',
-    startTime: '2026-02-10 09:00'
-  },
-  {
-    id: 4,
-    name: '计算机组成原理',
-    startTime: '2026-02-11 14:00'
-  },
-  {
-    id: 5,
-    name: '数据结构期中',
-    startTime: '2026-02-15 08:30'
-  },
-  {
-    id: 6,
-    name: '操作系统原理',
-    startTime: '2026-02-20 10:00'
+// 加载首页数据
+const loadHomeData = async () => {
+  loading.value = true
+  try {
+    const res = await request.get('/exam/home')
+    if (res.code === '200') {
+      const data = res.data
+      
+      // 进行中的考试 - 添加倒计时
+      ongoingExams.value = (data.ongoingExams || []).map(exam => ({
+        ...exam,
+        remainingSeconds: exam.remainingSeconds || 0
+      }))
+      
+      // 待考科目
+      upcomingExams.value = data.upcomingExams || []
+      
+      // 最近成绩
+      recentScores.value = data.recentScores || []
+      
+      // 启动倒计时
+      if (ongoingExams.value.length > 0 && !countdownTimer) {
+        countdownTimer = setInterval(updateCountdowns, 1000)
+      }
+    } else {
+      ElMessage.error(res.msg || '加载数据失败')
+    }
+  } catch (error) {
+    console.error('加载首页数据失败:', error)
+    ElMessage.error('加载数据失败')
+  } finally {
+    loading.value = false
   }
-])
-
-// 假数据 - 最近成绩
-const recentScores = ref([
-  {
-    id: 1,
-    examName: '高等数学第一章测试',
-    score: 92,
-    totalScore: 100,
-    submitTime: '2026-02-08 16:30'
-  },
-  {
-    id: 2,
-    examName: '大学英语听力测试',
-    score: 85,
-    totalScore: 100,
-    submitTime: '2026-02-07 10:15'
-  },
-  {
-    id: 3,
-    examName: 'C语言程序设计',
-    score: 78,
-    totalScore: 100,
-    submitTime: '2026-02-05 14:20'
-  },
-  {
-    id: 4,
-    examName: '离散数学测验',
-    score: 88,
-    totalScore: 100,
-    submitTime: '2026-02-03 09:45'
-  },
-  {
-    id: 5,
-    examName: '计算机网络基础',
-    score: 95,
-    totalScore: 100,
-    submitTime: '2026-01-28 15:30'
-  }
-])
+}
 
 // 格式化倒计时
 const formatTime = (seconds) => {
@@ -283,6 +239,7 @@ const formatTime = (seconds) => {
 const getTimeTagType = (startTime) => {
   const diff = new Date(startTime) - new Date()
   const hours = diff / (1000 * 60 * 60)
+  if (hours <= 0) return 'success'  // 已经开始
   if (hours < 24) return 'danger'
   if (hours < 72) return 'warning'
   return 'info'
@@ -294,6 +251,7 @@ const getTimeLabel = (startTime) => {
   const hours = Math.floor(diff / (1000 * 60 * 60))
   const days = Math.floor(hours / 24)
 
+  if (hours <= 0) return '进行中'  // 已经开始
   if (hours < 1) return '即将开始'
   if (hours < 24) return `${hours}小时后`
   return `${days}天后`
@@ -330,10 +288,7 @@ const updateCountdowns = () => {
 }
 
 onMounted(() => {
-  // 启动倒计时
-  if (ongoingExams.value.length > 0 && !countdownTimer) {
-    countdownTimer = setInterval(updateCountdowns, 1000)
-  }
+  loadHomeData()
 })
 
 onUnmounted(() => {
@@ -354,7 +309,7 @@ onUnmounted(() => {
 
 /* 欢迎横幅 */
 .welcome-banner {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #5fede7 0%, #f6fafa 100%);
   border-radius: 16px;
   padding: 40px;
   color: white;
@@ -539,10 +494,8 @@ onUnmounted(() => {
 
 .quick-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
-  max-width: 600px;
-  margin: 0 auto;
 }
 
 .quick-item {
@@ -574,9 +527,9 @@ onUnmounted(() => {
   font-size: 28px;
 }
 
-.quick-icon.blue { background: linear-gradient(135deg, #667eea, #764ba2); }
-.quick-icon.green { background: linear-gradient(135deg, #11998e, #38ef7d); }
-.quick-icon.orange { background: linear-gradient(135deg, #f093fb, #f5576c); }
+.quick-icon.blue { background: linear-gradient(135deg, #f6f309, #f3e6a9); }
+.quick-icon.green { background: linear-gradient(135deg, #9de3dd, #38ef7d); }
+.quick-icon.orange { background: linear-gradient(135deg, #e185ec, #e471b6); }
 .quick-icon.purple { background: linear-gradient(135deg, #4facfe, #00f2fe); }
 
 .quick-text {

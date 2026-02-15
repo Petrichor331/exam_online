@@ -67,4 +67,10 @@
         select * from `question_option` where question_id = #{questionId}
     </select>
 
+    <select id="selectOptionsForExam" resultType="com.example.common.dto.QuestionOptionDTO">
+        select id, option_label as optionLabel, option_content as optionContent
+        from `question_option`
+        where question_id = #{questionId}
+    </select>
+
 </mapper>

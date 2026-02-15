@@ -584,7 +584,7 @@ const data = reactive({
 const load = async () => {
   data.loading = true
   try {
-    const res = await request.get('/testPaper/add', {
+    const res = await request.get('/testPaper/selectPage', {
       params: {
         pageNum: data.pageNum,
         pageSize: data.pageSize,

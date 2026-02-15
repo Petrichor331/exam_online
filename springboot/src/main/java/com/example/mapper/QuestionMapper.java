@@ -27,4 +27,7 @@ public interface QuestionMapper {
 
     @Select("select distinct knowledge_point from question where course_id=#{courseId}")
     List<String> selectKnowledgePoints(Integer courseId);
+
+    @Select("select * from question where course_id=#{courseId}")
+    List<Question> selectByCourseId(Integer courseId);
 }

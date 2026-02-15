@@ -27,8 +27,11 @@ const router = createRouter({
       path: '/front',
       component: () => import('@/views/Front.vue'),
       children: [
-        { path: 'home', component: () => import('@/views/front/Home.vue'),  },
-        { path: 'person', component: () => import('@/views/front/person.vue'),  }
+        { path: 'home', meta: { name: '首页' }, component: () => import('@/views/front/Home.vue'),  },
+        { path: 'person', meta: { name: '个人中心' }, component: () => import('@/views/front/person.vue'),  },
+        { path: 'course', meta: { name: '课程中心' }, component: () => import('@/views/front/Course.vue'),  },
+        { path: 'myCourse', meta: { name: '我的课程' }, component: () => import('@/views/front/MyCourse.vue'),  },
+        { path: 'exam/:paperId', meta: { name: '正在考试' }, component: () => import('@/views/front/Exam.vue'),  }
       ]
     },
     { path: '/404', component: () => import('@/views/404.vue') },

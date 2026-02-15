@@ -11,6 +11,8 @@ public class TestPaperAddDTO {
     private String endTime;
     private Integer duration;   // 考试时长
     private String generateType; // 出卷方式
+    private Integer difficulty;  // 难度（1-5）
+    private List<String> knowledgePoints; // 知识点列表
     private List< Integer> questionIds;
 
     public List<Integer> getQuestionIds() {
@@ -67,5 +69,21 @@ public class TestPaperAddDTO {
 
     public void setDuration(Integer duration) {
         this.duration = duration;
+    }
+
+    public Integer getDifficulty() {
+        return difficulty;
+    }
+
+    public void setDifficulty(Integer difficulty) {
+        this.difficulty = difficulty;
+    }
+
+    public List<String> getKnowledgePoints() {
+        return knowledgePoints;
+    }
+
+    public void setKnowledgePoints(List<String> knowledgePoints) {
+        this.knowledgePoints = knowledgePoints;
     }
 }

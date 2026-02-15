@@ -6,7 +6,7 @@ public class Score {
     private Integer paperId;
     private Integer totalScore;
     private String status;
-    private String time;
+    private String submitTime;
 
     public Integer getTotalScore() {
         return totalScore;
@@ -48,11 +48,11 @@ public class Score {
         this.status = status;
     }
 
-    public String getTime() {
-        return time;
+    public String getSubmitTime() {
+        return submitTime;
     }
 
-    public void setTime(String time) {
-        this.time = time;
+    public void setSubmitTime(String submitTime) {
+        this.submitTime = submitTime;
     }
 }

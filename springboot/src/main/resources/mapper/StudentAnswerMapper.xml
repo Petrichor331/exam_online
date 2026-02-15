@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.StudentAnswerMapper">
+
+    <insert id="insert" parameterType="com.example.entity.StudentAnswer" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO student_answer 
+        (student_id, paper_id, question_id, answer_text, answer_option, max_score, 
+         ai_score, final_score, similarity, grading_status, create_time, update_time)
+        VALUES 
+        (#{studentId}, #{paperId}, #{questionId}, #{answerText}, #{answerOption}, #{maxScore},
+         #{aiScore}, #{finalScore}, #{similarity}, #{gradingStatus}, NOW(), NOW())
+    </insert>
+
+    <!-- 批量插入 -->
+    <insert id="batchInsert">
+        INSERT INTO student_answer 
+        (student_id, paper_id, question_id, answer_text, answer_option, max_score, 
+         grading_status, create_time, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.studentId}, #{item.paperId}, #{item.questionId}, 
+             #{item.answerText}, #{item.answerOption}, #{item.maxScore},
+             #{item.gradingStatus}, NOW(), NOW())
+        </foreach>
+    </insert>
+
+    <!-- 根据考试记录ID查询所有答案 -->
+    <select id="selectByScoreId" resultType="com.example.entity.StudentAnswer">
+        SELECT sa.* FROM student_answer sa
+        INNER JOIN score s ON sa.student_id = s.student_id AND sa.paper_id = s.paper_id
+        WHERE s.id = #{scoreId}
+    </select>
+
+    <!-- 查询待评分的简答题 -->
+    <select id="selectPendingSubjective" resultType="com.example.entity.StudentAnswer">
+        SELECT sa.* FROM student_answer sa
+        INNER JOIN score s ON sa.student_id = s.student_id AND sa.paper_id = s.paper_id
+        INNER JOIN question q ON sa.question_id = q.id
+        WHERE s.id = #{scoreId} 
+        AND q.type_id = 5 
+        AND sa.grading_status = 'pending'
+    </select>
+
+    <!-- 更新AI评分 -->
+    <update id="updateAiScore">
+        UPDATE student_answer 
+        SET ai_score = #{aiScore}, 
+            similarity = #{similarity}, 
+            grading_status = #{gradingStatus},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新最终成绩 -->
+    <update id="updateFinalScore">
+        UPDATE student_answer 
+        SET final_score = #{finalScore}, 
+            grading_status = #{gradingStatus},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新评分人 -->
+    <update id="updateGradedBy">
+        UPDATE student_answer 
+        SET graded_by = #{gradedBy},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID更新 -->
+    <update id="updateById" parameterType="com.example.entity.StudentAnswer">
+        UPDATE student_answer
+        <set>
+            <if test="answerText != null">answer_text = #{answerText},</if>
+            <if test="answerOption != null">answer_option = #{answerOption},</if>
+            <if test="maxScore != null">max_score = #{maxScore},</if>
+            <if test="aiScore != null">ai_score = #{aiScore},</if>
+            <if test="finalScore != null">final_score = #{finalScore},</if>
+            <if test="similarity != null">similarity = #{similarity},</if>
+            <if test="gradingStatus != null">grading_status = #{gradingStatus},</if>
+            updated_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+</mapper>

@@ -6,6 +6,7 @@
     <select id="selectAll" resultType="com.example.common.vo.TestPaperVO">
         SELECT
             tp.id,
+            tp.course_id as courseId,
             tp.name as paperName,
             c.name as courseName,
             t.name as teacherName,

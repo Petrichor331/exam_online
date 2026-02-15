@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 public class QuestionOptionDTO {
+    private Integer id;
     private String optionLabel;// A/B/C/D
     private String optionContent; //选项内容
 

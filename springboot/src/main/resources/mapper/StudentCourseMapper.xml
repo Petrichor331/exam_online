@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mapper.StudentCourseMapper">
+
+    <!-- 插入选课记录 -->
+    <insert id="insert" parameterType="com.example.entity.StudentCourse" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO student_course (student_id, course_id, create_time)
+        VALUES (#{studentId}, #{courseId}, NOW())
+    </insert>
+
+    <!-- 根据学生ID查询所有选课 -->
+    <select id="selectByStudentId" resultType="com.example.entity.StudentCourse">
+        SELECT 
+            sc.*,
+            c.name as courseName,
+            c.img as courseImg,
+            t.name as teacherName
+        FROM student_course sc
+        LEFT JOIN course c ON sc.course_id = c.id
+        LEFT JOIN teacher t ON c.teacher_id = t.id
+        WHERE sc.student_id = #{studentId}
+        ORDER BY sc.create_time DESC
+    </select>
+
+    <!-- 查询学生是否已选某课程 -->
+    <select id="countByStudentAndCourse" resultType="int">
+        SELECT COUNT(*) FROM student_course 
+        WHERE student_id = #{studentId} AND course_id = #{courseId}
+    </select>
+
+    <!-- 查询学生选的所有课程ID -->
+    <select id="selectCourseIdsByStudentId" resultType="java.lang.Integer">
+        SELECT course_id FROM student_course 
+        WHERE student_id = #{studentId}
+    </select>
+
+    <!-- 删除选课记录 -->
+    <delete id="deleteByStudentAndCourse">
+        DELETE FROM student_course 
+        WHERE student_id = #{studentId} AND course_id = #{courseId}
+    </delete>
+
+    <!-- 查询某课程的所有学生 -->
+    <select id="selectByCourseId" resultType="com.example.entity.StudentCourse">
+        SELECT 
+            sc.*,
+            s.name as studentName,
+            s.username as studentNo
+        FROM student_course sc
+        LEFT JOIN student s ON sc.student_id = s.id
+        WHERE sc.course_id = #{courseId}
+        ORDER BY sc.create_time DESC
+    </select>
+
+</mapper>

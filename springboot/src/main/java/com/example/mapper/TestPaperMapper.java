@@ -16,6 +16,6 @@ public interface TestPaperMapper {
 
     void deleteById(Integer id);
 
-    @Select("select * from `testPaper` where id=#{id}")
+    @Select("select * from `test_Paper` where id=#{id}")
     TestPaper selectById(Integer id);
 }
