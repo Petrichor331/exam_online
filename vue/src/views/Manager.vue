@@ -49,6 +49,7 @@
             <el-menu-item index="/manager/course">课程信息</el-menu-item>
             <el-menu-item index="/manager/question">题库信息</el-menu-item>
             <el-menu-item index="/manager/testPaper">试卷信息</el-menu-item>
+            <el-menu-item v-if="data.user.role==='TEACHER' || data.user.role==='ADMIN'" index="/manager/grading">学生答卷</el-menu-item>
           </el-sub-menu>
           <el-sub-menu index="2">
             <template #title>
@@ -77,21 +78,22 @@ import { useRouter } from 'vue-router';
 const router = useRouter();
 import {ElMessage} from "element-plus";
 import defaultAvatar from '@/assets/img/avatar.png'
+import { getCurrentUser, clearCurrentUser, updateCurrentUser } from '@/utils/userStorage.js'
 
 
 const data = reactive({
-  user: JSON.parse(localStorage.getItem('xm-user') || '{}')
+  user: getCurrentUser()
 })
 
 /*退出登录后到登录页面*/
 const logout = ()=>{
-  localStorage.removeItem('xm-user')
+  clearCurrentUser()
   router.push('/login')
 }
 
 //是上面routerview的监听事件，监听到数据更新时，重新获取用户信息
 const updateUser = ()=>{
-  const newUser = JSON.parse(localStorage.getItem('xm-user') || '{}')
+  const newUser = getCurrentUser()
   Object.assign(data.user, newUser)
 }
 

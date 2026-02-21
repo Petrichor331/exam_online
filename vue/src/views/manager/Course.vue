@@ -174,6 +174,7 @@
 <script setup>
 import { reactive, ref } from "vue"
 import request from "@/utils/request.js"
+import { getCurrentUser } from "@/utils/userStorage.js"
 import { ElMessage, ElMessageBox } from "element-plus"
 import {
   Delete,
@@ -208,7 +209,7 @@ const rules = {
 }
 
 const data = reactive({
-  user:JSON.parse(localStorage.getItem('xm-user') || '{}'),
+  user: getCurrentUser(),
   formVisible: false,
   form: {},
   tableData: [],

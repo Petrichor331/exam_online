@@ -28,7 +28,9 @@
 
     <!-- 根据考试记录ID查询所有答案 -->
     <select id="selectByScoreId" resultType="com.example.entity.StudentAnswer">
-        SELECT sa.* FROM student_answer sa
+        SELECT sa.id, sa.student_id, sa.paper_id, sa.question_id, sa.answer_text, sa.answer_option, 
+               sa.max_score, sa.ai_score, sa.final_score, sa.similarity, sa.grading_status
+        FROM student_answer sa
         INNER JOIN score s ON sa.student_id = s.student_id AND sa.paper_id = s.paper_id
         WHERE s.id = #{scoreId}
     </select>
@@ -73,16 +75,14 @@
     <!-- 根据ID更新 -->
     <update id="updateById" parameterType="com.example.entity.StudentAnswer">
         UPDATE student_answer
-        <set>
-            <if test="answerText != null">answer_text = #{answerText},</if>
-            <if test="answerOption != null">answer_option = #{answerOption},</if>
-            <if test="maxScore != null">max_score = #{maxScore},</if>
-            <if test="aiScore != null">ai_score = #{aiScore},</if>
-            <if test="finalScore != null">final_score = #{finalScore},</if>
-            <if test="similarity != null">similarity = #{similarity},</if>
-            <if test="gradingStatus != null">grading_status = #{gradingStatus},</if>
-            updated_time = NOW()
-        </set>
+        SET answer_text = #{answerText},
+            answer_option = #{answerOption},
+            max_score = #{maxScore},
+            ai_score = #{aiScore},
+            final_score = #{finalScore},
+            similarity = #{similarity},
+            grading_status = #{gradingStatus},
+            update_time = NOW()
         WHERE id = #{id}
     </update>
 

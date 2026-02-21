@@ -20,6 +20,7 @@ const router = createRouter({
         { path: 'course', meta: { name: '课程信息' }, component: () => import('@/views/manager/Course.vue'),  },
         { path: 'question', meta: { name: '题库信息' }, component: () => import('@/views/manager/Question.vue'),  },
         { path: 'testPaper', meta: { name: '试卷信息' }, component: () => import('@/views/manager/TestPaper.vue'),  },
+        { path: 'grading', meta: { name: '学生答卷' }, component: () => import('@/views/manager/Grading.vue'),  },
 
       ]
     },
@@ -31,7 +32,8 @@ const router = createRouter({
         { path: 'person', meta: { name: '个人中心' }, component: () => import('@/views/front/person.vue'),  },
         { path: 'course', meta: { name: '课程中心' }, component: () => import('@/views/front/Course.vue'),  },
         { path: 'myCourse', meta: { name: '我的课程' }, component: () => import('@/views/front/MyCourse.vue'),  },
-        { path: 'exam/:paperId', meta: { name: '正在考试' }, component: () => import('@/views/front/Exam.vue'),  }
+        { path: 'exam/:paperId', meta: { name: '正在考试' }, component: () => import('@/views/front/Exam.vue'),  },
+        { path: 'myScore', meta: { name: '我的成绩' }, component: () => import('@/views/front/MyScore.vue'),  }
       ]
     },
     { path: '/404', component: () => import('@/views/404.vue') },

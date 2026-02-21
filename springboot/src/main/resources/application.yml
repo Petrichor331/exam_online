@@ -24,3 +24,8 @@ mybatis:
 
 
 fileBaseUrl: http://localhost:${server.port}
+
+# Python AI评分服务配置
+python:
+  service:
+    url: http://localhost:5000  # Python服务地址

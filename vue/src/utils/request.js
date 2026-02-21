@@ -1,6 +1,7 @@
 import {ElMessage} from "element-plus";
 import router from "@/router/index.js";
 import axios from "axios";
+import { getCurrentUser } from "@/utils/userStorage.js";
 
 const request = axios.create({
     baseURL: 'http://localhost:9090',
@@ -12,12 +13,10 @@ const request = axios.create({
 request.interceptors.request.use(config => {
     config.headers['Content-Type'] = 'application/json;charset=utf-8';
 
-    const userStr = localStorage.getItem("xm-user")
-    if (userStr) {
-        const user = JSON.parse(userStr)
-        if (user && user.token) {
-            config.headers['token'] = user.token
-        }
+    // 使用新的工具函数获取当前用户
+    const user = getCurrentUser()
+    if (user && user.token) {
+        config.headers['token'] = user.token
     }
 
     return config

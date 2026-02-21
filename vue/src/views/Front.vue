@@ -10,6 +10,7 @@
         <el-menu :default-active="router.currentRoute.value.path" router mode="horizontal">
           <el-menu-item index="/front/home">首页</el-menu-item>
           <el-menu-item index="/front/person">个人中心</el-menu-item>
+          <el-menu-item v-if="data.user.role==='STUDENT'" index="/front/myScore">我的成绩</el-menu-item>
         </el-menu>
       </div>
       <div class="front-header-right">
@@ -42,15 +43,16 @@
 import router from "@/router/index.js";
 import { reactive } from "vue";
 import request from "@/utils/request.js";
+import { getCurrentUser, clearCurrentUser, updateCurrentUser } from '@/utils/userStorage.js'
 
 
 const logout = ()=>{
-  localStorage.removeItem('xm-user')
+  clearCurrentUser()
   router.push('/login')
 }
 
 const data = reactive({
-  user: JSON.parse(localStorage.getItem('xm-user') || '{}'),
+  user: getCurrentUser(),
   top:'',
   noticeData:[]
 })
@@ -76,7 +78,7 @@ loadNotice()
 
 //是上面routerview的监听事件，监听到数据更新时，重新获取用户信息
 const updateUser = ()=>{
-  const newUser = JSON.parse(localStorage.getItem('xm-user') || '{}')
+  const newUser = getCurrentUser()
   Object.assign(data.user, newUser)
 }
 </script>

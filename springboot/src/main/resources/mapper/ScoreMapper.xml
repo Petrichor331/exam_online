@@ -71,4 +71,65 @@
         SELECT COUNT(*) FROM score WHERE student_id = #{studentId} AND paper_id = #{paperId}
     </select>
 
+    <!-- 查看某个老师底下的答卷-->
+    <select id="selectByTeacherId" resultType="com.example.common.vo.ScoreListVO">
+        SELECT 
+            s.id as scoreId,
+            s.student_id as studentId,
+            s.paper_id as paperId,
+            s.total_score as totalScore,
+            s.status,
+            s.submit_time as submitTime,
+            stu.name as studentName,
+            tp.name as paperName,
+            c.id as courseId,
+            c.name as courseName
+        FROM score s
+        LEFT JOIN student stu ON s.student_id = stu.id
+        LEFT JOIN test_paper tp ON s.paper_id = tp.id
+        LEFT JOIN course c ON tp.course_id = c.id
+        WHERE tp.teacher_id = #{teacherId}
+        ORDER BY s.submit_time DESC
+    </select>
+
+    <!-- 根据教师ID和课程ID查询答卷列表 -->
+    <select id="selectByTeacherIdAndCourseId" resultType="com.example.common.vo.ScoreListVO">
+        SELECT 
+            s.id as scoreId,
+            s.student_id as studentId,
+            s.paper_id as paperId,
+            s.total_score as totalScore,
+            s.status,
+            s.submit_time as submitTime,
+            stu.name as studentName,
+            tp.name as paperName,
+            c.id as courseId,
+            c.name as courseName
+        FROM score s
+        LEFT JOIN student stu ON s.student_id = stu.id
+        LEFT JOIN test_paper tp ON s.paper_id = tp.id
+        LEFT JOIN course c ON tp.course_id = c.id
+        WHERE tp.teacher_id = #{teacherId}
+        <if test="courseId != null">
+            AND tp.course_id = #{courseId}
+        </if>
+        ORDER BY s.submit_time DESC
+    </select>
+
+    <!-- 统计某教师某课程的答卷数量 -->
+    <select id="countByTeacherAndCourse" resultType="int">
+        SELECT COUNT(*)
+        FROM score s
+        LEFT JOIN test_paper tp ON s.paper_id = tp.id
+        WHERE tp.teacher_id = #{teacherId}
+        <if test="courseId != null">
+            AND tp.course_id = #{courseId}
+        </if>
+    </select>
+
+    <!-- 根据试卷ID查询考试记录 -->
+    <select id="selectByPaperId" resultType="com.example.entity.Score">
+        SELECT * FROM score WHERE paper_id = #{paperId} ORDER BY submit_time DESC
+    </select>
+
 </mapper>

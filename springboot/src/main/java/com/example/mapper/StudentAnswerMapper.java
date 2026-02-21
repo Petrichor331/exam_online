@@ -3,6 +3,7 @@ package com.example.mapper;
 import com.example.entity.StudentAnswer;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -56,4 +57,7 @@ public interface StudentAnswerMapper {
      * 根据ID更新答案记录
      */
     int updateById(StudentAnswer answer);
+
+    @Select("select * from student_answer where id=#{id}")
+    StudentAnswer selectById(Integer id);
 }

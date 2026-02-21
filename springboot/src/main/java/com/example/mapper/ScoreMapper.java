@@ -1,5 +1,6 @@
 package com.example.mapper;
 
+import com.example.common.vo.ScoreListVO;
 import com.example.entity.Score;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -68,4 +69,23 @@ public interface ScoreMapper {
      */
     int countByStudentAndPaper(@Param("studentId") Integer studentId, 
                                 @Param("paperId") Integer paperId);
+
+    List<ScoreListVO> selectByTeacherId(Integer teacherId);
+    
+    /**
+     * 根据教师ID和课程ID查询答卷列表
+     */
+    List<ScoreListVO> selectByTeacherIdAndCourseId(@Param("teacherId") Integer teacherId, 
+                                                    @Param("courseId") Integer courseId);
+    
+    /**
+     * 统计某教师某课程的答卷数量
+     */
+    int countByTeacherAndCourse(@Param("teacherId") Integer teacherId, 
+                                @Param("courseId") Integer courseId);
+    
+    /**
+     * 根据试卷ID查询考试记录
+     */
+    List<Score> selectByPaperId(@Param("paperId") Integer paperId);
 }

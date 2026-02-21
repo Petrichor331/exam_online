@@ -31,12 +31,13 @@
 
 <script setup>
 import request from "@/utils/request.js";
+import { getCurrentUser } from "@/utils/userStorage.js";
 import {reactive} from "vue";
 import {ElMessage} from "element-plus";
 import { Bell } from "@element-plus/icons-vue";
 
 const data = reactive({
-  user: JSON.parse(localStorage.getItem('xm-user') || '{}'),
+  user: getCurrentUser(),
   noticeData: [],
 })
 

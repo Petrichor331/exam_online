@@ -20,6 +20,7 @@
 <script setup>
 import {reactive, ref} from "vue";
 import request from "@/utils/request.js";
+import { getCurrentUser, clearCurrentUser } from "@/utils/userStorage.js";
 import {ElMessage} from "element-plus";
 import router from "@/router/index.js";
 
@@ -39,7 +40,7 @@ const updatePassword = ()=>{
 }
 
 const logout = ()=>{
-  localStorage.removeItem('xm-user')
+  clearCurrentUser()
   router.push('/login')
 }
 
@@ -56,7 +57,7 @@ const validatePass = (rule, value, callback) => {
 }
 
 const data = reactive({
-  user:JSON.parse(localStorage.getItem('xm-user') || '{}'),
+  user: getCurrentUser(),
   rules:{
     password:[{required:true, message:'请输入原密码', trigger:'blur'}],
     newPassword:[{required:true, message:'请输入新密码', trigger:'blur'}],

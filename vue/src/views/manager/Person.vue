@@ -36,6 +36,7 @@
 <script setup>
 import {reactive} from "vue";
 import request from "@/utils/request.js";
+import { getCurrentUser, setCurrentUser } from "@/utils/userStorage.js";
 import {ElMessage} from "element-plus";
 import router from "@/router/index.js";
 
@@ -48,7 +49,7 @@ const update = ()=>{
       if(res.code === '200'){
         ElMessage.success('保存成功')
         console.log('update 返回的 user:', res.data)
-        localStorage.setItem('xm-user', JSON.stringify(data.user))
+        setCurrentUser(data.user)
         emit('updateUser')
         router.push('/manager/home')
       }else{
@@ -61,7 +62,7 @@ const update = ()=>{
       if(res.code === '200'){
         ElMessage.success('保存成功')
         console.log('update 返回的 user:', res.data)
-        localStorage.setItem('xm-user', JSON.stringify(data.user))
+        setCurrentUser(data.user)
         emit('updateUser')
         router.push('/manager/home')
       }else{
@@ -74,7 +75,7 @@ const update = ()=>{
       if(res.code === '200'){
         ElMessage.success('保存成功')
         console.log('update 返回的 user:', res.data)
-        localStorage.setItem('xm-user', JSON.stringify(data.user))
+        setCurrentUser(data.user)
         emit('updateUser')
         router.push('/student/home')
       }else{
@@ -85,7 +86,7 @@ const update = ()=>{
 }
 
 const data = reactive({
-  user:JSON.parse(localStorage.getItem('xm-user') || '{}')
+  user: getCurrentUser()
 })
 
 const handleFileUpload = (res) => {

@@ -34,6 +34,7 @@ import axios from "axios";
 import request from "@/utils/request.js";
 import {ElMessage} from "element-plus";
 import { useRouter } from 'vue-router';
+import { setCurrentUser } from '@/utils/userStorage.js'
 const router = useRouter();
 
 const data = reactive({
@@ -53,8 +54,14 @@ const login = () => {
         if(res.code === '200'){
           ElMessage.success('登录成功')
           /*登录成功后要存储信息到浏览器缓存*/
-          localStorage.setItem('xm-user', JSON.stringify(res.data))
-          router.push('/manager/home')
+          // 使用新的存储方式，支持多用户同时登录
+          setCurrentUser(res.data)
+          if(res.data.role === 'STUDENT'){
+            router.push('/front/home')
+          }else{
+            router.push('/manager/home')
+          }
+
         }else{
           ElMessage.error(res.msg)
         }

@@ -48,6 +48,9 @@ public class ExamService {
     private QuestionTypeMapper questionTypeMapper;
     @Autowired
     private QuestionOptionMapper questionOptionMapper;
+    
+    @Autowired
+    private PythonGradingService pythonGradingService;
 
     /**
      * 获取首页数据
@@ -253,10 +256,16 @@ public class ExamService {
                 answer.setMaxScore(question.getScore());
                 
                 // 根据题型存储到不同字段
-                if (question.getTypeId() == 5) { // 简答题
+                // 简答题(5)和填空题(4)保存到answer_text
+                // 单选(1)、多选(2)、判断(3)保存到answer_option
+                if (question.getTypeId() == 4 || question.getTypeId() == 5) { 
                     answer.setAnswerText(item.getAnswer());
+                    log.info("保存文本答案，题目ID: {}, 题型: {}, 答案: {}", 
+                        question.getId(), question.getTypeId(), item.getAnswer());
                 } else {
                     answer.setAnswerOption(item.getAnswer());
+                    log.info("保存选项答案，题目ID: {}, 题型: {}, 答案: {}", 
+                        question.getId(), question.getTypeId(), item.getAnswer());
                 }
             }
             
@@ -313,26 +322,38 @@ public class ExamService {
         log.info("开始客观题评分，scoreId: {}, 找到答案数量: {}", scoreId, answers.size());
 
         for (StudentAnswer answer : answers) {
-            log.info("评分题目ID: {}, 当前状态: {}", answer.getQuestionId(), answer.getGradingStatus());
+            log.info("评分题目ID: {}, answerId: {}, 当前状态: {}, 学生答案: {}", 
+                answer.getQuestionId(), answer.getId(), answer.getGradingStatus(), answer.getAnswerOption());
             // 查询题目信息
             Question question = questionMapper.selectById(answer.getQuestionId());
             if (question == null) continue;
 
             // 单选、多选、判断（纯客观题）
             if (question.getTypeId() == 1 || question.getTypeId() == 2 || question.getTypeId() == 3) {
-                // 查询标准答案
-                List<QuestionOption> options = questionOptionMapper.selectByQuestionId(question.getId());
-                String correctAnswer = options.stream()
-                        .filter(QuestionOption::getIsCorrect)
-                        .map(QuestionOption::getOptionLabel)
-                        .sorted()
-                        .collect(Collectors.joining(","));
+                String correctAnswer;
+                
+                // 判断题的正确答案在 question.reference_answer 字段
+                if (question.getTypeId() == 3) {
+                    correctAnswer = question.getReferenceAnswer();
+                } else {
+                    // 单选、多选题的正确答案在 question_option 表
+                    List<QuestionOption> options = questionOptionMapper.selectByQuestionId(question.getId());
+                    correctAnswer = options.stream()
+                            .filter(QuestionOption::getIsCorrect)
+                            .map(QuestionOption::getOptionLabel)
+                            .sorted()
+                            .collect(Collectors.joining(","));
+                }
 
                 // 获取学生答案
                 String studentAnswer = answer.getAnswerOption();
+                
+                log.info("客观题评分，题目ID: {}, 题型: {}, 学生答案: {}, 正确答案: {}", 
+                    question.getId(), question.getTypeId(), studentAnswer, correctAnswer);
 
-                // 对比答案
-                if (studentAnswer != null && studentAnswer.equals(correctAnswer)) {
+                // 对比答案（去除空格，不区分大小写）
+                if (studentAnswer != null && correctAnswer != null && 
+                    studentAnswer.trim().equalsIgnoreCase(correctAnswer.trim())) {
                     answer.setFinalScore(question.getScore());
                 } else {
                     answer.setFinalScore(0);
@@ -340,36 +361,19 @@ public class ExamService {
                 answer.setGradingStatus("graded");
 
                 // 更新答案记录
+                log.info("准备更新客观题，answerId: {}, finalScore: {}, gradingStatus: {}", 
+                    answer.getId(), answer.getFinalScore(), answer.getGradingStatus());
                 int result = studentAnswerMapper.updateById(answer);
-                log.info("客观题评分完成，题目ID: {}, 得分: {}, 状态: {}, 更新结果: {}", 
-                    answer.getQuestionId(), answer.getFinalScore(), answer.getGradingStatus(), result);
+                log.info("客观题评分完成，answerId: {}, 题目ID: {}, 得分: {}, 状态: {}, 更新结果: {}", 
+                    answer.getId(), answer.getQuestionId(), answer.getFinalScore(), answer.getGradingStatus(), result);
+                if (result == 0) {
+                    log.error("更新失败！answerId: {}, 请检查数据库", answer.getId());
+                }
             }
-            // 填空题：自动评分，但老师可修改
+            // 填空题：不自动评分，保持pending状态，等待教师手动评分
             else if (question.getTypeId() == 4) {
-                // 获取标准答案和学生答案
-                String correctAnswer = question.getReferenceAnswer();
-                String studentAnswer = answer.getAnswerText();
-
-                if (studentAnswer != null && correctAnswer != null) {
-                    // 简单对比（去除空格，不区分大小写）
-                    String normalizedStudent = studentAnswer.trim().toLowerCase();
-                    String normalizedCorrect = correctAnswer.trim().toLowerCase();
-
-                if (normalizedStudent.equals(normalizedCorrect)) {
-                    answer.setFinalScore(question.getScore());
-                } else {
-                    answer.setFinalScore(0);
-                }
-                } else {
-                    answer.setFinalScore(0);
-                }
-                // 状态设为ai_graded，表示老师可以修改
-                answer.setGradingStatus("ai_graded");
-
-                // 更新答案记录
-                int result = studentAnswerMapper.updateById(answer);
-                log.info("填空题评分完成，题目ID: {}, 得分: {}, 状态: {}, 更新结果: {}", 
-                    answer.getQuestionId(), answer.getFinalScore(), answer.getGradingStatus(), result);
+                // 填空题保持pending状态，由教师手动评分
+                log.info("填空题暂不自动评分，题目ID: {}, 保持pending状态，等待教师手动评分", answer.getQuestionId());
             }
             // 简答题：保持pending，等待AI评分
             else {
@@ -389,25 +393,16 @@ public class ExamService {
             // 查询待评分的简答题
             List<StudentAnswer> subjectiveAnswers = studentAnswerMapper.selectPendingSubjective(scoreId);
             
-            for (StudentAnswer answer : subjectiveAnswers) {
-                // TODO: 调用Python微服务
-                // 构造请求参数：标准答案、学生答案、满分
-                // JSONObject result = callPythonService(standard, student, maxScore);
-                
-                // 模拟AI评分结果
-                Integer aiScore = (int) Math.round(answer.getMaxScore() * 0.8); // 模拟80%得分
-                double similarity = 0.85;
-                
-                // 更新AI评分
-                studentAnswerMapper.updateAiScore(
-                    answer.getId(), 
-                    aiScore, 
-                    similarity, 
-                    "ai_graded"
-                );
-                
-                log.info("题目 {} AI评分完成: {}", answer.getQuestionId(), aiScore);
+            if (subjectiveAnswers.isEmpty()) {
+                log.info("没有需要AI评分的题目，scoreId: {}", scoreId);
+                calculateTotalScore(scoreId);
+                return;
             }
+            
+            // 调用Python AI评分服务进行批量评分
+            List<PythonGradingService.AIGradingResult> results = pythonGradingService.gradeBatch(subjectiveAnswers);
+            
+            log.info("AI评分完成，共{}道题，scoreId: {}", results.size(), scoreId);
             
             // 计算总分
             calculateTotalScore(scoreId);

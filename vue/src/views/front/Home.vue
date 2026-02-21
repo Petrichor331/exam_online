@@ -164,6 +164,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/utils/request.js'
+import { getCurrentUser } from '@/utils/userStorage.js'
 import { ElMessage } from 'element-plus'
 import {
   Timer, Document, Star, User, ArrowRight,
@@ -175,7 +176,7 @@ const router = useRouter()
 
 // 用户名
 const userName = computed(() => {
-  const user = JSON.parse(localStorage.getItem('xm-user') || '{}')
+  const user = getCurrentUser()
   return user.name || '同学'
 })
 

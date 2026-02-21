@@ -17,4 +17,10 @@ public interface CourseMapper {
 
     @Select("select * from `course` where id=#{id}")
     Course selectById(Integer id);
+    
+    /**
+     * 根据教师ID查询课程列表
+     */
+    @Select("select * from `course` where teacher_id=#{teacherId}")
+    List<Course> selectByTeacherId(Integer teacherId);
 }
