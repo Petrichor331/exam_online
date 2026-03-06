@@ -105,13 +105,9 @@ public class TestPaperService {
     }
     
     /**
-     * 自动组卷 - 基于遗传算法，固定题型数量
-     * @param courseId 课程ID
-     * @param difficulty 目标难度（1-5）
-     * @param knowledgePoints 知识点列表
-     * @return 选中的题目ID字符串（逗号分隔）
+     * 自动组卷 - 基于遗传算法，固定题型数量（内部方法）
      */
-    private String autoGenerateQuestions(Integer courseId, Integer difficulty, List<String> knowledgePoints) {
+    private String autoGenerateQuestionsInternal(Integer courseId, Integer difficulty, List<String> knowledgePoints) {
         // 1. 获取候选题库（带分值信息）
         List<Question> candidates = questionMapper.selectByCourseId(courseId);
         if (candidates.size() < 29) {
@@ -544,6 +540,13 @@ public class TestPaperService {
         for (Integer id : ids) {
             testPaperMapper.deleteById(id);
         }
+    }
+    
+    /**
+     * 公开的自动组卷方法，供模拟练习调用
+     */
+    public String autoGenerateQuestions(Integer courseId, Integer difficulty, List<String> knowledgePoints) {
+        return autoGenerateQuestionsInternal(courseId, difficulty, knowledgePoints);
     }
 
 }

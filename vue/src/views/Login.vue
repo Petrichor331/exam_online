@@ -5,10 +5,10 @@
       <div style="font-weight: bold; font-size:24px; text-align: center; margin-bottom: 30px; color: #47afdc; letter-spacing: 5px">欢迎登录</div>
       <el-form ref="formRef" :model="data.form" :rules="data.rules">
         <el-form-item prop="username" style="margin-bottom: 20px">
-          <el-input :prefix-icon ="User" v-model="data.form.username" placeholder="请输入账号"></el-input>
+          <el-input :prefix-icon="User" v-model="data.form.username" placeholder="请输入账号"></el-input>
         </el-form-item>
         <el-form-item prop="password" style="margin-bottom: 20px">
-          <el-input show-password :prefix-icon ="Lock" v-model="data.form.password" placeholder="请输入密码"></el-input>
+          <el-input show-password :prefix-icon="Lock" v-model="data.form.password" placeholder="请输入密码"></el-input>
         </el-form-item>
         <el-form-item prop="role" style="margin-bottom: 35px">
           <el-select v-model="data.form.role" placeholder="请选择角色">
@@ -58,6 +58,8 @@ const login = () => {
           setCurrentUser(res.data)
           if(res.data.role === 'STUDENT'){
             router.push('/front/home')
+          }else if(res.data.role === 'TEACHER'){
+            router.push('/teacher/home')
           }else{
             router.push('/manager/home')
           }

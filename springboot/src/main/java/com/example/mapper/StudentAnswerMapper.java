@@ -60,4 +60,10 @@ public interface StudentAnswerMapper {
 
     @Select("select * from student_answer where id=#{id}")
     StudentAnswer selectById(Integer id);
+    
+    /**
+     * 根据考试记录ID和题目ID查询答案
+     */
+    @Select("select * from student_answer where student_id = #{studentId} and question_id = #{questionId} and paper_id = #{paperId}")
+    StudentAnswer selectByStudentAndPaperAndQuestion(@Param("studentId") Integer studentId, @Param("paperId") Integer paperId,@Param("questionId") Integer questionId);
 }

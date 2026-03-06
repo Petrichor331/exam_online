@@ -12,6 +12,15 @@ public class TestPaperVO {
     private String startTime;//开始时间
     private String endTime;//结束时间
     private String status;//试卷状态
+    private Integer duration;//考试时长
+
+    public Integer getDuration() {
+        return duration;
+    }
+
+    public void setDuration(Integer duration) {
+        this.duration = duration;
+    }
 
     public Integer getId() {
         return id;

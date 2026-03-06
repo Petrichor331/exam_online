@@ -3,7 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
-    { path: '/', redirect: '/manager/home' },
+    { path: '/', redirect: '/login' },
     {
       path: '/manager',
       component: () => import('@/views/Manager.vue'),
@@ -25,6 +25,20 @@ const router = createRouter({
       ]
     },
     {
+      path: '/teacher',
+      component: () => import('@/views/TeacherLayout.vue'),
+      children: [
+        { path: 'home', meta: { name: '教师首页' }, component: () => import('@/views/teacher/Home.vue')  },
+        { path: 'grading', meta: { name: '试卷批阅' }, component: () => import('@/views/manager/Grading.vue'),  },
+        { path: 'course', meta: { name: '课程管理' }, component: () => import('@/views/manager/Course.vue'),  },
+        { path: 'testPaper', meta: { name: '试卷管理' }, component: () => import('@/views/manager/TestPaper.vue'),  },
+        { path: 'question', meta: { name: '题库管理' }, component: () => import('@/views/manager/Question.vue'),  },
+        { path: 'examPlan', meta: { name: '考试安排' }, component: () => import('@/views/manager/ExamPlan.vue'),  },
+        { path: 'person', meta: { name: '个人资料' }, component: () => import('@/views/manager/Person.vue'),  },
+        { path: 'password', meta: { name: '修改密码' }, component: () => import('@/views/teacher/Password.vue'),  },
+      ]
+    },
+    {
       path: '/front',
       component: () => import('@/views/Front.vue'),
       children: [
@@ -33,7 +47,11 @@ const router = createRouter({
         { path: 'course', meta: { name: '课程中心' }, component: () => import('@/views/front/Course.vue'),  },
         { path: 'myCourse', meta: { name: '我的课程' }, component: () => import('@/views/front/MyCourse.vue'),  },
         { path: 'exam/:paperId', meta: { name: '正在考试' }, component: () => import('@/views/front/Exam.vue'),  },
-        { path: 'myScore', meta: { name: '我的成绩' }, component: () => import('@/views/front/MyScore.vue'),  }
+        { path: 'myScore', meta: { name: '我的成绩' }, component: () => import('@/views/front/MyScore.vue'),  },
+        { path: 'examList', meta: { name: '考试列表' }, component: () => import('@/views/front/ExamList.vue')  },
+        { path: 'practice', meta: { name: '模拟练习' }, component: () => import('@/views/front/Practice.vue')  },
+        { path: 'answer/:scoreId', meta: { name: '查看答卷' }, component: () => import('@/views/front/Answer.vue')  },
+        { path: 'password', meta: { name: '修改密码' }, component: () => import('@/views/front/Password.vue')  },
       ]
     },
     { path: '/404', component: () => import('@/views/404.vue') },

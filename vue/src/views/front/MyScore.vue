@@ -1,4 +1,4 @@
-<template>
+d<template>
   <div class="score-container">
     <div class="page-header">
       <h2>我的成绩</h2>
@@ -65,7 +65,7 @@
         <el-col :span="8" v-for="exam in recentScores" :key="exam.scoreId">
           <el-card class="exam-card" shadow="hover" @click="viewDetail(exam)">
             <div class="exam-header">
-              <span class="exam-name">{{ exam.examName }}</span>
+              <span class="exam-name">{{ exam.paperName }}</span>
               <el-tag :type="getStatusType(exam.status)" size="small">
                 {{ getStatusText(exam.status) }}
               </el-tag>
@@ -117,9 +117,9 @@
       <!-- 成绩表格 -->
       <el-table :data="filteredScoreList" stripe style="width: 100%">
         <el-table-column type="index" label="序号" width="80" align="center" />
-        <el-table-column prop="examName" label="考试名称" min-width="200">
+        <el-table-column prop="paperName" label="考试名称" min-width="200">
           <template #default="{ row }">
-            <span class="exam-name-text">{{ row.examName }}</span>
+            <span class="exam-name-text">{{ row.paperName }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="submitTime" label="提交时间" width="180" />
@@ -292,7 +292,7 @@ const filteredScoreList = computed(() => {
   return scoreList.value.filter(score => {
     const matchStatus = !filterStatus.value || score.status === filterStatus.value;
     const matchName = !searchExam.value || 
-      (score.examName && score.examName.includes(searchExam.value));
+      (score.paperName && score.paperName.includes(searchExam.value));
     return matchStatus && matchName;
   });
 });
@@ -404,7 +404,15 @@ const loadScoreList = () => {
     params: { studentId: data.user.id }
   }).then(res => {
     if (res.code === '200') {
-      scoreList.value = res.data || [];
+      scoreList.value = (res.data || []).map(score => ({
+        scoreId: score.scoreId,
+        paperId: score.paperId,
+        paperName: score.paperName,
+        studentId: score.studentId,
+        submitTime: score.submitTime,
+        status: score.status,
+        score: score.totalScore,
+      }));
       recentScores.value = scoreList.value.slice(0, 3);
       loadStats();
     } else {
@@ -417,29 +425,29 @@ const loadScoreList = () => {
   });
 };
 
-// 模拟数据（用于演示）
-const useMockData = () => {
-  scoreList.value = [
-    {
-      scoreId: 1,
-      examName: 'Java程序设计期中考试',
-      submitTime: '2024-03-15 14:30:00',
-      score: 85,
-      totalScore: 100,
-      status: 'finished'
-    },
-    {
-      scoreId: 2,
-      examName: '数据库原理期末考试',
-      submitTime: '2024-03-10 16:00:00',
-      score: 92,
-      totalScore: 100,
-      status: 'finished'
-    }
-  ];
-  recentScores.value = scoreList.value.slice(0, 3);
-  loadStats();
-};
+// // 模拟数据（用于演示）
+// const useMockData = () => {
+//   scoreList.value = [
+//     {
+//       scoreId: 1,
+//       paperName: 'Java程序设计期中考试',
+//       submitTime: '2024-03-15 14:30:00',
+//       score: 85,
+//       totalScore: 100,
+//       status: 'finished'
+//     },
+//     {
+//       scoreId: 2,
+//       paperName: '数据库原理期末考试',
+//       submitTime: '2024-03-10 16:00:00',
+//       score: 92,
+//       totalScore: 100,
+//       status: 'finished'
+//     }
+//   ];
+//   recentScores.value = scoreList.value.slice(0, 3);
+//   loadStats();
+// };
 
 // 查看详情
 const viewDetail = (row) => {

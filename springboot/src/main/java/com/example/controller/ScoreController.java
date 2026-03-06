@@ -163,4 +163,15 @@ public class ScoreController {
             return Result.error("500", "获取成绩统计失败: " + e.getMessage());
         }
     }
+
+    @GetMapping("/myScores")
+    public Result myScores(@RequestParam Integer studentId){
+        try{
+            List<ScoreListVO> myScores = scoreService.getMyScores(studentId);
+            return Result.success(myScores);
+        }catch(Exception e){
+            log.error("获取成绩失败, studentId: {}", studentId, e);
+            return Result.error("500", "获取成绩失败: " + e.getMessage());
+        }
+    }
 }

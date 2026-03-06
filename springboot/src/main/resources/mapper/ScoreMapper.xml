@@ -132,4 +132,8 @@
         SELECT * FROM score WHERE paper_id = #{paperId} ORDER BY submit_time DESC
     </select>
 
+    <!-- 根据试卷ID和学生id查询该学生这套试卷的考试记录 -->
+    <select id="selectByPaperIdAndStudentId" resultType="com.example.entity.Score">
+        SELECT * FROM score WHERE student_id = #{studentId} AND paper_id = #{paperId}
+    </select>
 </mapper>

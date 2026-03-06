@@ -32,7 +32,7 @@
     </select>
 
     <!-- insert into test_paper (username, password, ...) values ('test_paper', 'test_paper', ...) -->
-    <insert id="insert" parameterType="com.example.entity.TestPaper" useGeneratedKeys="true">
+    <insert id="insert" parameterType="com.example.entity.TestPaper" useGeneratedKeys="true" keyProperty="id">
         insert into `test_paper`
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>

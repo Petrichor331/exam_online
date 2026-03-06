@@ -178,7 +178,7 @@ public class ScoreService {
                 log.error("答案不存在，answerId: {}", answerId);
                 return false;
             }
-            
+
             // 检查分数是否超过满分
             if (score > answer.getMaxScore()) {
                 log.warn("评分超过满分，answerId: {}, score: {}, maxScore: {}", 
@@ -191,7 +191,8 @@ public class ScoreService {
             
             if (result > 0) {
                 // 重新计算总分
-                recalculateTotalScore(answer.getPaperId());
+                Score this_score = scoreMapper.selectByPaperIdAndStudentId(answer.getPaperId(), answer.getStudentId());
+                recalculateTotalScore(this_score.getId());
                 log.info("人工改卷成功，answerId: {}, score: {}", answerId, score);
                 return true;
             }
@@ -221,9 +222,11 @@ public class ScoreService {
             int successCount = 0;
             for (Map<String, Object> item : scores) {
                 Integer answerId = (Integer) item.get("answerId");
-                Integer scoreValue = (Integer) item.get("score");
+                // 分数可能是 Integer 或 Double，需要兼容处理
+                Object scoreObj = item.get("score");
+                Integer scoreValue = scoreObj != null ? ((Number) scoreObj).intValue() : null;
 
-                if (manualGrade(answerId, scoreValue)) {
+                if (scoreValue != null && manualGrade(answerId, scoreValue)) {
                     successCount++;
                 }
             }
@@ -280,7 +283,7 @@ public class ScoreService {
     }
     
     /**
-     * 重新计算总分
+     * 重新计算总分并更新状态为已完成
      * @param scoreId 考试记录ID
      */
     private void recalculateTotalScore(Integer scoreId) {
@@ -299,7 +302,11 @@ public class ScoreService {
         }
         
         scoreMapper.updateTotalScore(scoreId, totalScore);
-        log.info("重新计算总分完成，scoreId: {}, totalScore: {}", scoreId, totalScore);
+        
+        // 更新状态为已完成，此时学生才能看到分数
+        scoreMapper.updateStatus(scoreId, "finished");
+        
+        log.info("重新计算总分完成，scoreId: {}, totalScore: {}, 状态: finished", scoreId, totalScore);
     }
     
     /**
@@ -366,5 +373,34 @@ public class ScoreService {
         stats.put("distribution", distribution);
         
         return stats;
+    }
+
+    /**
+     * 获取个人所有成绩
+     *
+     * */
+
+    public List<ScoreListVO> getMyScores(Integer studentId) {
+        List<Score> scores = scoreMapper.selectByStudentId(studentId);
+        List<ScoreListVO> scoreListVOS = new ArrayList<>();
+        for (Score score : scores) {
+            ScoreListVO scoreListVO = new ScoreListVO();
+            scoreListVO.setScoreId(score.getId());
+            scoreListVO.setStudentId(score.getStudentId());
+            scoreListVO.setPaperId(score.getPaperId());
+            scoreListVO.setTotalScore(score.getTotalScore());
+            scoreListVO.setStatus(score.getStatus());
+            scoreListVO.setSubmitTime(score.getSubmitTime());
+            //查试卷名称
+            TestPaper testPaper = testPaperMapper.selectById(score.getPaperId());
+            if(testPaper!=null){
+                scoreListVO.setPaperName(testPaper.getName());
+            }else{
+                scoreListVO.setPaperName("试卷已删除");
+            }
+            scoreListVOS.add(scoreListVO);
+
+        }
+        return scoreListVOS;
     }
 }

@@ -6,22 +6,32 @@
         <p>今天是 {{ currentDate }}，准备好迎接新的挑战了吗？</p>
       </div>
       <div class="banner-illustration">
-        <img src="@/assets/img/在线考试系统登录背景2.png" alt="考试插图">
+        <el-carousel :interval="4000" arrow="never" height="320px" indicator-position="none">
+          <el-carousel-item>
+            <img src="@/assets/img/在线考试系统登录背景1.png" alt="轮播图1">
+          </el-carousel-item>
+          <el-carousel-item>
+            <img src="@/assets/img/在线考试系统登录背景2.png" alt="轮播图2">
+          </el-carousel-item>
+          <el-carousel-item>
+            <img src="@/assets/img/登录背景1.png" alt="轮播图3">
+          </el-carousel-item>
+        </el-carousel>
       </div>
     </div>
 
     <!-- 进行中的考试 -->
-    <div v-if="ongoingExams.length > 0" class="section ongoing-section">
+    <div v-if="validOngoingExams.length > 0" class="section ongoing-section">
       <div class="section-header">
         <div class="section-title">
           <el-icon class="pulse-icon"><Timer /></el-icon>
           <span>进行中的考试</span>
-          <el-tag type="danger" effect="dark">{{ ongoingExams.length }}</el-tag>
+          <el-tag type="danger" effect="dark">{{ validOngoingExams.length }}</el-tag>
         </div>
       </div>
       <div class="ongoing-cards">
         <div
-            v-for="exam in ongoingExams"
+            v-for="exam in validOngoingExams"
             :key="exam.id"
             class="ongoing-card"
             @click="continueExam(exam)"
@@ -51,25 +61,25 @@
     <div class="section quick-access">
       <div class="quick-grid">
         <div class="quick-item" @click="goTo('/front/course')">
-          <div class="quick-icon blue">
+          <div class="quick-icon black">
             <el-icon><Reading /></el-icon>
           </div>
           <div class="quick-text">课程中心</div>
         </div>
         <div class="quick-item" @click="goTo('/front/myCourse')">
-          <div class="quick-icon green">
+          <div class="quick-icon black">
             <el-icon><Collection /></el-icon>
           </div>
           <div class="quick-text">我的课程</div>
         </div>
-        <div class="quick-item" @click="goTo('/front/exam/:paperId')">
-          <div class="quick-icon orange">
+        <div class="quick-item"  @click="goTo('/front/examList')">
+          <div class="quick-icon black">
             <el-icon><Document /></el-icon>
           </div>
           <div class="quick-text">全部考试</div>
         </div>
         <div class="quick-item" @click="goTo('/front/practice')">
-          <div class="quick-icon purple">
+          <div class="quick-icon black">
             <el-icon><EditPen /></el-icon>
           </div>
           <div class="quick-text">模拟练习</div>
@@ -173,6 +183,11 @@ import {
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
+
+const validOngoingExams = computed(()=>{
+  //这里的filter是只保留时间大于0的
+  return ongoingExams.value.filter(exam=>exam.remainingSeconds > 0)
+})
 
 // 用户名
 const userName = computed(() => {
@@ -304,15 +319,15 @@ onUnmounted(() => {
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
-  background: #f5f7fa;
+  background: #f5f5f5;
   min-height: calc(100vh - 120px);
 }
 
 /* 欢迎横幅 */
 .welcome-banner {
-  background: linear-gradient(135deg, #5fede7 0%, #f6fafa 100%);
-  border-radius: 16px;
-  padding: 40px;
+  background: linear-gradient(140deg, #0e0d0d 0%, #555 100%);
+  border-radius: 8px;
+  padding: 32px 40px;
   color: white;
   display: flex;
   justify-content: space-between;
@@ -320,6 +335,7 @@ onUnmounted(() => {
   margin-bottom: 24px;
   position: relative;
   overflow: hidden;
+  height: 300px;
 }
 
 .welcome-banner::before {
@@ -336,6 +352,7 @@ onUnmounted(() => {
 .banner-content {
   position: relative;
   z-index: 1;
+  padding-left: 50px;
 }
 
 .banner-content h1 {
@@ -351,22 +368,24 @@ onUnmounted(() => {
 }
 
 .banner-illustration {
-  width: 300px;
-  opacity: 0.9;
+  width: 650px;
+
 }
 
 .banner-illustration img {
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 15px;
 }
 
 /* 区块通用样式 */
 .section {
   background: white;
-  border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid #e0e0e0;
 }
 
 .section-header {
@@ -387,7 +406,7 @@ onUnmounted(() => {
 
 .section-title .el-icon {
   font-size: 20px;
-  color: #409EFF;
+  color: #333;
 }
 
 .pulse-icon {
@@ -401,8 +420,8 @@ onUnmounted(() => {
 
 /* 进行中考试 */
 .ongoing-section {
-  background: linear-gradient(to right, #fff5f5, #ffffff);
-  border: 1px solid #ffe4e4;
+  background: #fff;
+  border: 1px solid #e4e7ed;
 }
 
 .ongoing-cards {
@@ -415,18 +434,16 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  background: white;
-  border-radius: 12px;
-  border-left: 4px solid #f56c6c;
-  box-shadow: 0 4px 12px rgba(245, 108, 108, 0.15);
+  padding: 16px 20px;
+  background: #fff;
+  border-radius: 8px;
+  border-left: 4px solid #333;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s;
 }
 
 .ongoing-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(245, 108, 108, 0.2);
+  background: #f5f5f5;
 }
 
 .exam-name {
@@ -466,9 +483,9 @@ onUnmounted(() => {
 }
 
 .countdown-time {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: bold;
-  color: #f56c6c;
+  color: #333;
   font-family: 'Courier New', monospace;
   letter-spacing: 2px;
 }
@@ -503,17 +520,15 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 24px;
-  border-radius: 12px;
+  padding: 20px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.3s;
-  background: #f5f7fa;
+  transition: all 0.2s;
+  background: #f0f2f5;
 }
 
 .quick-item:hover {
-  background: white;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-  transform: translateY(-4px);
+  background: #e8eaed;
 }
 
 .quick-icon {
@@ -528,10 +543,10 @@ onUnmounted(() => {
   font-size: 28px;
 }
 
-.quick-icon.blue { background: linear-gradient(135deg, #f6f309, #f3e6a9); }
-.quick-icon.green { background: linear-gradient(135deg, #9de3dd, #38ef7d); }
-.quick-icon.orange { background: linear-gradient(135deg, #e185ec, #e471b6); }
-.quick-icon.purple { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.quick-icon.black { background: #333; }
+.quick-icon.green { background: #444; }
+.quick-icon.orange { background: #555; }
+.quick-icon.purple { background: #666; }
 
 .quick-text {
   font-size: 16px;
@@ -557,14 +572,14 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  background: #f5f7fa;
-  border-radius: 8px;
-  transition: all 0.3s;
+  padding: 12px 16px;
+  background: #fafafa;
+  border-radius: 6px;
+  transition: all 0.2s;
 }
 
 .exam-list-item:hover {
-  background: #e4e7ed;
+  background: #f0f2f5;
 }
 
 .exam-title {
@@ -592,8 +607,8 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  border-bottom: 1px solid #ebeef5;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f2f5;
 }
 
 .score-item:last-child {
@@ -622,9 +637,9 @@ onUnmounted(() => {
   font-weight: bold;
 }
 
-.score-num.excellent { color: #67c23a; }
-.score-num.pass { color: #e6a23c; }
-.score-num.fail { color: #f56c6c; }
+.score-num.excellent { color: #333; }
+.score-num.pass { color: #555; }
+.score-num.fail { color: #777; }
 
 .score-total {
   font-size: 14px;

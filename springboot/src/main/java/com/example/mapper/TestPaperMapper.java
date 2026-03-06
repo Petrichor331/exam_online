@@ -18,4 +18,10 @@ public interface TestPaperMapper {
 
     @Select("select * from `test_Paper` where id=#{id}")
     TestPaper selectById(Integer id);
+    
+    @Select("select * from `test_Paper` where course_id=#{courseId} limit 1")
+    TestPaper selectByCourseId(Integer courseId);
+    
+    @Select("select * from `test_Paper` where course_id=#{courseId}")
+    List<TestPaper> selectByCourseIdList(Integer courseId);
 }

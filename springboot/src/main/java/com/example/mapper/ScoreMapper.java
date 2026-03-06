@@ -88,4 +88,13 @@ public interface ScoreMapper {
      * 根据试卷ID查询考试记录
      */
     List<Score> selectByPaperId(@Param("paperId") Integer paperId);
+
+    /**
+     * 根据试卷ID和学生ID查询考试记录scoreId
+     */
+    Score selectByPaperIdAndStudentId(@Param("paperId") Integer paperId,
+                                      @Param("studentId") Integer studentId);
+
+
+
 }

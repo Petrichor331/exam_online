@@ -1,17 +1,17 @@
 package com.example.service;
 
 import com.example.common.dto.QuestionOptionDTO;
-import com.example.common.vo.ExamQuestionVO;
-import com.example.common.vo.HomeDataVO;
+import com.example.common.vo.*;
 import com.example.common.dto.SaveAnswerDTO;
 import com.example.common.dto.StartExamDTO;
-import com.example.common.vo.StartExamVO;
-import com.example.common.vo.TestPaperVO;
 import com.example.entity.*;
 import com.example.mapper.*;
 import com.example.utils.TokenUtils;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -45,12 +45,18 @@ public class ExamService {
     private StudentCourseMapper studentCourseMapper;
 
     @Resource
+    private TeacherMapper teacherMapper;
+
+    @Resource
     private QuestionTypeMapper questionTypeMapper;
     @Autowired
     private QuestionOptionMapper questionOptionMapper;
     
     @Autowired
     private PythonGradingService pythonGradingService;
+    
+    @Autowired
+    private TestPaperService testPaperService;
 
     /**
      * 获取首页数据
@@ -71,12 +77,12 @@ public class ExamService {
     }
     
     /**
-     * 获取进行中的考试
+     * 获取进行中的考试(详细）
      */
     private List<HomeDataVO.OngoingExamVO> getOngoingExams(Integer studentId) {
         List<Score> ongoingScores = scoreMapper.selectOngoingByStudentId(studentId);
         
-        return ongoingScores.stream().map(score -> {
+        List<HomeDataVO.OngoingExamVO> result = ongoingScores.stream().map(score -> {
             HomeDataVO.OngoingExamVO vo = new HomeDataVO.OngoingExamVO();
             vo.setId(score.getId());
             vo.setPaperId(score.getPaperId());
@@ -97,15 +103,165 @@ public class ExamService {
                 LocalDateTime endTime = LocalDateTime.parse(paper.getEnd(), 
                     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                 long remainingSeconds = java.time.Duration.between(LocalDateTime.now(), endTime).getSeconds();
-                vo.setRemainingSeconds((int) Math.max(0, remainingSeconds));
                 
+                // 如果考试已过期，不再显示在"进行中"
+                if (remainingSeconds <= 0) {
+                    return null;
+                }
+                
+                vo.setRemainingSeconds((int) remainingSeconds);
                 vo.setTotalScore(100); // 默认总分
+                
+                Integer teacherId = paper.getTeacherId();
+                Teacher teacher = teacherMapper.selectById(teacherId);
+                vo.setTeacherName(teacher.getName());
             }
-            
             return vo;
-        }).collect(Collectors.toList());
+        }).filter(vo -> vo != null).collect(Collectors.toList());
+        
+        return result;
+    }
+    /**
+     * 获取考试列表（含状态判断）
+     */
+    public PageInfo<ExamListVO> getExamList(Integer pageNum, Integer pageSize, String name, Integer studentId) {
+        PageHelper.startPage(pageNum, pageSize);
+        
+        // 获取学生已参加的考试和待参加的考试
+        List<ExamListVO> voList = getExamListByStudent(studentId, name);
+        
+        PageInfo<ExamListVO> pageInfo = new PageInfo<>(voList);
+        pageInfo.setPageNum(pageNum);
+        pageInfo.setPageSize(pageSize);
+        
+        return pageInfo;
     }
     
+    /**
+     * 获取学生的考试列表（含状态）
+     */
+    private List<ExamListVO> getExamListByStudent(Integer studentId, String name) {
+        List<ExamListVO> result = new ArrayList<>();
+        
+        // 1. 获取已交卷/已完成的学生答卷记录 (从score表)
+        List<Score> scoreList = scoreMapper.selectByStudentId(studentId);
+        
+        // 2. 获取学生已选的课程对应的试卷(待考试)
+        List<StudentCourse> studentCourses = studentCourseMapper.selectByStudentId(studentId);
+        
+        // 处理已完成的考试记录
+        for (Score score : scoreList) {
+            TestPaper paper = testPaperMapper.selectById(score.getPaperId());
+            if (paper == null) continue;
+            
+            // 搜索过滤
+            if (name != null && !name.isEmpty() && !paper.getName().contains(name)) {
+                continue;
+            }
+            
+            ExamListVO vo = new ExamListVO();
+            vo.setId(paper.getId());
+            vo.setPaperId(paper.getId());
+            vo.setPaperName(paper.getName());
+            vo.setQuestionCount(paper.getQuestionIds() != null ? paper.getQuestionIds().split(",").length : 0);
+            vo.setTotalScore(100);
+            vo.setStartTime(paper.getStart());
+            vo.setEndTime(paper.getEnd());
+            vo.setScoreId(score.getId());
+            vo.setExamScore(score.getTotalScore());
+            
+            // 获取教师名称
+            Teacher teacher = teacherMapper.selectById(paper.getTeacherId());
+            vo.setTeacherName(teacher != null ? teacher.getName() : "");
+            
+            // 判断状态：pending-待考试, ongoing-进行中, waiting-待评分, finished-已完成
+            if (score.getTotalScore() != null) {
+                vo.setStatus("finished"); // 已评分
+            } else if (score.getSubmitTime() != null) {
+                vo.setStatus("waiting"); // 已交卷，待评分
+            } else {
+                // 未交卷，判断时间
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime startTime = LocalDateTime.parse(paper.getStart(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                LocalDateTime endTime = LocalDateTime.parse(paper.getEnd(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                
+                if (now.isBefore(startTime)) {
+                    vo.setStatus("pending"); // 未开始
+                } else if (now.isAfter(endTime)) {
+                    vo.setStatus("waiting"); // 已过期，自动交卷
+                } else {
+                    vo.setStatus("ongoing"); // 进行中
+                }
+            }
+            
+            result.add(vo);
+        }
+        
+        // 3. 处理待考试的试卷（学生已选课程但未参加考试）
+        for (StudentCourse sc : studentCourses) {
+            // 获取该课程下的所有试卷
+            List<TestPaper> papers = testPaperMapper.selectByCourseIdList(sc.getCourseId());
+            
+            for (TestPaper paper : papers) {
+                // 搜索过滤
+                if (name != null && !name.isEmpty() && !paper.getName().contains(name)) {
+                    continue;
+                }
+
+                // 检查是否已在scoreList中
+                boolean exists = result.stream().anyMatch(v -> v.getPaperId().equals(paper.getId()));
+                if (exists) continue;
+            
+                ExamListVO vo = new ExamListVO();
+                vo.setId(paper.getId());
+                vo.setPaperId(paper.getId());
+                vo.setPaperName(paper.getName());
+                vo.setQuestionCount(paper.getQuestionIds() != null ? paper.getQuestionIds().split(",").length : 0);
+                vo.setTotalScore(100);
+                vo.setStartTime(paper.getStart());
+                vo.setEndTime(paper.getEnd());
+                
+                // 获取教师名称
+                Teacher teacher = teacherMapper.selectById(paper.getTeacherId());
+                vo.setTeacherName(teacher != null ? teacher.getName() : "");
+                
+                // 判断状态
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime startTime = LocalDateTime.parse(paper.getStart(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                LocalDateTime endTime = LocalDateTime.parse(paper.getEnd(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                
+                if (now.isBefore(startTime)) {
+                    vo.setStatus("pending"); // 待考试
+                } else if (now.isAfter(endTime)) {
+                    vo.setStatus("waiting"); // 已过期
+                } else {
+                    vo.setStatus("ongoing"); // 进行中
+                }
+                
+                result.add(vo);
+            }
+        }
+        
+        // 按状态排序：进行中 > 待考试 > 待评分 > 已完成
+        result.sort((a, b) -> {
+            int orderA = getStatusOrder(a.getStatus());
+            int orderB = getStatusOrder(b.getStatus());
+            return Integer.compare(orderA, orderB);
+        });
+        
+        return result;
+    }
+    
+    private int getStatusOrder(String status) {
+        switch (status) {
+            case "ongoing": return 1;
+            case "pending": return 2;
+            case "waiting": return 3;
+            case "finished": return 4;
+            default: return 5;
+        }
+    }
+
     /**
      * 获取待考科目（基于选课）
      * 只返回学生已选课程下的、未参加的、进行中的考试
@@ -180,6 +336,10 @@ public class ExamService {
         // 检查是否已参加
         int count = scoreMapper.countByStudentAndPaper(studentId, paperId);
         if (count > 0) {
+            Score existingScore = scoreMapper.selectByPaperIdAndStudentId(paperId,studentId);
+            if(existingScore!=null){
+                return buildStartExamVO(existingScore,paperId);
+            }
             throw new RuntimeException("您已参加过该考试");
         }
 
@@ -189,7 +349,11 @@ public class ExamService {
         score.setPaperId(paperId);
         score.setStatus("ongoing");
         scoreMapper.insert(score);
+        return buildStartExamVO(score,paperId);
 
+    }
+
+    private StartExamVO buildStartExamVO(Score score, Integer paperId){
         // 创建考试记录
         StartExamVO startExamVO = new StartExamVO();
         startExamVO.setScoreId(score.getId());
@@ -302,8 +466,8 @@ public class ExamService {
         // 3. 客观题自动评分
         autoGradeObjectiveQuestions(scoreId);
 
-        // 4. 更新考试状态为评分中
-        scoreMapper.updateStatus(scoreId, "grading");
+        // 4. 更新考试状态为待评分（不立即显示分数，等教师批改）
+        scoreMapper.updateStatus(scoreId, "waiting");
 
         // 5. 异步调用AI评分（简答题）
         callPythonGradingAsync(scoreId);
@@ -413,7 +577,8 @@ public class ExamService {
     }
     
     /**
-     * 计算总分
+     * 计算总分（AI评分完成后调用，但不离线更新到数据库）
+     * 等教师确认后才真正更新总分
      */
     private void calculateTotalScore(Integer scoreId) {
         // 查询所有答案
@@ -423,7 +588,7 @@ public class ExamService {
         int gradedCount = 0;
 
         for (StudentAnswer answer : answers) {
-            // 优先使用finalScore（人工评分或客观题自动评分），否则使用aiScore（AI评分）
+            // 优先使用finalScore（人工评分），否则使用aiScore（AI评分）
             Integer scoreValue = answer.getFinalScore();
             if (scoreValue == null) {
                 scoreValue = answer.getAiScore();
@@ -434,16 +599,145 @@ public class ExamService {
             }
         }
 
-        // 更新总分
-        scoreMapper.updateTotalScore(scoreId, totalScore);
-
-        // 如果所有题目都已评分，更新状态为已完成
-        if (gradedCount == answers.size()) {
-            scoreMapper.updateStatus(scoreId, "finished");
-            log.info("考试评分完成，scoreId: {}, 总分: {}", scoreId, totalScore);
-        } else {
-            log.info("考试部分评分，scoreId: {}, 已评分: {}/{}, 当前总分: {}",
-                    scoreId, gradedCount, answers.size(), totalScore);
+        // AI评分完成后不立即更新总分，保持"waiting"状态
+        // 等教师确认评分后才更新总分和状态
+        log.info("AI评分完成，scoreId: {}, 已评分: {}/{}, 等待教师确认",
+                scoreId, gradedCount, answers.size());
+    }
+    
+    /**
+     * 查看答卷
+     */
+    public Map<String, Object> getAnswer(Integer scoreId, Integer studentId) {
+        Map<String, Object> result = new HashMap<>();
+        
+        // 获取成绩记录
+        Score score = scoreMapper.selectById(scoreId);
+        if (score == null || !score.getStudentId().equals(studentId)) {
+            throw new RuntimeException("无权查看此答卷");
         }
+        
+        // 获取试卷信息
+        TestPaper paper = testPaperMapper.selectById(score.getPaperId());
+        
+        // 构建考试信息
+        Map<String, Object> examInfo = new HashMap<>();
+        examInfo.put("paperName", paper.getName());
+        Teacher teacher = teacherMapper.selectById(paper.getTeacherId());
+        examInfo.put("teacherName", teacher != null ? teacher.getName() : "");
+        examInfo.put("startTime", paper.getStart());
+        examInfo.put("score", score.getTotalScore());
+        examInfo.put("totalScore", 100);
+        
+        result.put("examInfo", examInfo);
+        
+        // 获取题目列表
+        List<Map<String, Object>> questionList = new ArrayList<>();
+        
+        // 解析题目ID
+        String[] questionIds = paper.getQuestionIds().split(",");
+        
+        for (String qId : questionIds) {
+            Question question = questionMapper.selectById(Integer.parseInt(qId.trim()));
+            if (question == null) continue;
+            
+            Map<String, Object> qInfo = new HashMap<>();
+            qInfo.put("id", question.getId());
+            qInfo.put("name", question.getName());
+            qInfo.put("typeId", question.getTypeId());
+            // 获取题型名称
+            QuestionType questionType = questionTypeMapper.selectById(question.getTypeId());
+            qInfo.put("typeName", questionType != null ? questionType.getName() : "");
+            qInfo.put("score", question.getScore());
+            
+            // 获取学生答案
+            StudentAnswer studentAnswer = studentAnswerMapper.selectByStudentAndPaperAndQuestion(studentId, score.getPaperId(), question.getId());
+            if (studentAnswer != null) {
+                qInfo.put("studentAnswer", studentAnswer.getAnswerOption());
+                qInfo.put("isCorrect", studentAnswer.getFinalScore() != null && studentAnswer.getFinalScore() > 0);
+            } else {
+                qInfo.put("studentAnswer", null);
+                qInfo.put("isCorrect", null);
+            }
+            
+            // 获取标准答案
+            String correctAnswer = "";
+            // 客观题：单选、多选、判断 - 从选项中获取正确答案
+            if (question.getTypeId() != null && question.getTypeId() <= 3) {
+                List<QuestionOption> options = questionOptionMapper.selectByQuestionId(question.getId());
+                correctAnswer = options.stream()
+                    .filter(QuestionOption::getIsCorrect)
+                    .map(QuestionOption::getOptionLabel)
+                    .sorted()
+                    .collect(Collectors.joining(","));
+            } else {
+                // 主观题：从题目表中获取参考答案
+                correctAnswer = question.getReferenceAnswer();
+            }
+            qInfo.put("correctAnswer", correctAnswer);
+            
+            // 获取选项
+            List<QuestionOption> options = questionOptionMapper.selectByQuestionId(question.getId());
+            List<Map<String, Object>> optionList = new ArrayList<>();
+            for (QuestionOption opt : options) {
+                Map<String, Object> optInfo = new HashMap<>();
+                optInfo.put("optionLabel", opt.getOptionLabel());
+                optInfo.put("optionContent", opt.getOptionContent());
+                optInfo.put("isCorrect", opt.getIsCorrect());
+                optionList.add(optInfo);
+            }
+            qInfo.put("options", optionList);
+            
+            questionList.add(qInfo);
+        }
+        
+        result.put("questions", questionList);
+        
+        return result;
+    }
+    
+    /**
+     * 创建模拟练习试卷
+     */
+    @Transactional
+    public Map<String, Object> createPracticeExam(Integer studentId, Integer courseId, Integer difficulty, List<String> knowledgePoints) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            // 1. 调用TestPaperService的自动组卷功能
+            String questionIds = testPaperService.autoGenerateQuestions(courseId, difficulty, knowledgePoints);
+            
+            // 2. 创建模拟试卷（练习模式，无时间限制）
+            TestPaper practicePaper = new TestPaper();
+            practicePaper.setName("模拟练习-" + System.currentTimeMillis());
+            practicePaper.setCourseId(courseId);
+            practicePaper.setTeacherId(1); // 系统自动生成
+            practicePaper.setType("practice");
+            practicePaper.setStart(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            practicePaper.setEnd("2099-12-31 23:59:59"); // 长期有效
+            practicePaper.setTime(7200); // 2小时
+            practicePaper.setQuestionIds(questionIds);
+            testPaperMapper.insert(practicePaper);
+            
+            // 3. 创建考试记录
+            Score score = new Score();
+            score.setStudentId(studentId);
+            score.setPaperId(practicePaper.getId());
+            score.setTotalScore(100);
+            score.setStatus("ongoing");
+            scoreMapper.insert(score);
+            
+            result.put("paperId", practicePaper.getId());
+            result.put("scoreId", score.getId());
+            result.put("message", "模拟试卷生成成功");
+            
+            log.info("创建模拟练习成功，studentId: {}, courseId: {}, paperId: {}", studentId, courseId, practicePaper.getId());
+            
+        } catch (Exception e) {
+            log.error("创建模拟练习失败", e);
+            throw new RuntimeException("创建模拟练习失败：" + e.getMessage());
+        }
+        
+        return result;
     }
 }

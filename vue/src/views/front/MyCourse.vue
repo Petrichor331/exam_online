@@ -29,30 +29,7 @@
       </div>
     </div>
 
-    <!-- 进行中的考试 -->
-    <div v-if="ongoingExams.length > 0" class="section">
-      <div class="section-header">
-        <div class="section-title">
-          <el-icon class="pulse-icon"><Timer /></el-icon>
-          <span>进行中的考试</span>
-          <el-tag type="danger">{{ ongoingExams.length }}</el-tag>
-        </div>
-      </div>
-      <div class="exam-list urgent">
-        <div
-          v-for="exam in ongoingExams"
-          :key="exam.id"
-          class="exam-card urgent-card"
-          @click="continueExam(exam)"
-        >
-          <div class="exam-info">
-            <h4>{{ exam.name }}</h4>
-            <p>剩余时间: {{ formatTime(exam.remainingSeconds) }}</p>
-          </div>
-          <el-button type="danger">继续考试</el-button>
-        </div>
-      </div>
-    </div>
+
 
     <!-- 待考科目 -->
     <div v-if="upcomingExams.length > 0" class="section">
@@ -185,17 +162,17 @@ const upcomingExams = ref([])
 const finishedExams = ref([])
 const recentScores = ref([])
 
-// 渐变色
-const gradients = [
-  'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-  'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-  'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-  'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+// 灰色背景
+const colors = [
+  '#444',
+  '#555',
+  '#666',
+  '#777',
+  '#888'
 ]
 
 const getGradient = (id) => {
-  return gradients[(id || 0) % gradients.length]
+  return colors[(id || 0) % colors.length]
 }
 
 // 格式化时间
@@ -378,12 +355,12 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 40px;
-  padding: 24px;
+  gap: 32px;
+  padding: 20px;
   background: white;
-  border-radius: 12px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #e0e0e0;
 }
 
 .stat-item {
@@ -393,7 +370,7 @@ onMounted(() => {
 .stat-value {
   font-size: 32px;
   font-weight: bold;
-  color: #409EFF;
+  color: #333;
   margin-bottom: 4px;
 }
 
@@ -411,10 +388,10 @@ onMounted(() => {
 /* 区块 */
 .section {
   background: white;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #e0e0e0;
 }
 
 .section-header {
@@ -454,19 +431,19 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  background: #f5f7fa;
-  border-radius: 8px;
-  transition: all 0.3s;
+  padding: 12px 16px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  transition: all 0.2s;
 }
 
 .exam-card:hover {
-  background: #e4e7ed;
+  background: #f0f0f0;
 }
 
 .exam-card.urgent-card {
-  background: linear-gradient(to right, #fff5f5, #ffffff);
-  border-left: 4px solid #f56c6c;
+  background: #f5f5f5;
+  border-left: 4px solid #333;
   cursor: pointer;
 }
 
@@ -495,15 +472,14 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
-  transition: all 0.3s;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  transition: all 0.2s;
 }
 
 .course-item:hover {
-  border-color: #409EFF;
-  box-shadow: 0 2px 12px rgba(64,158,255,0.1);
+  background: #fafafa;
 }
 
 .course-main {
@@ -566,7 +542,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .score-item:last-child {
@@ -600,9 +576,9 @@ onMounted(() => {
   font-weight: normal;
 }
 
-.score-value.excellent { color: #67c23a; }
-.score-value.pass { color: #e6a23c; }
-.score-value.fail { color: #f56c6c; }
+.score-value.excellent { color: #333; }
+.score-value.pass { color: #555; }
+.score-value.fail { color: #777; }
 
 /* 空状态 */
 .empty-state {

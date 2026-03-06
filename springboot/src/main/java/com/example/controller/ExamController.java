@@ -3,14 +3,21 @@ package com.example.controller;
 import com.example.common.Result;
 import com.example.common.dto.SaveAnswerDTO;
 import com.example.common.dto.StartExamDTO;
+import com.example.common.vo.ExamListVO;
 import com.example.common.vo.HomeDataVO;
 import com.example.common.vo.StartExamVO;
 import com.example.entity.Account;
+import com.example.entity.Course;
+import com.example.entity.Score;
 import com.example.service.ExamService;
 import com.example.utils.TokenUtils;
+import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 考试Controller
@@ -42,7 +49,23 @@ public class ExamController {
             return Result.error("获取数据失败：" + e.getMessage());
         }
     }
-    
+
+    @GetMapping("/list")
+    public Result list(@RequestParam(defaultValue = "1") Integer pageNum,
+                       @RequestParam(defaultValue = "10") Integer pageSize,
+                       @RequestParam(required = false) String name) {
+        try {
+            Account currentUser = TokenUtils.getCurrentUser();
+            if (currentUser == null || !"STUDENT".equalsIgnoreCase(currentUser.getRole())) {
+                return Result.error("请先登录学生账号");
+            }
+            PageInfo<ExamListVO> pageInfo = examService.getExamList(pageNum, pageSize, name, currentUser.getId());
+            return Result.success(pageInfo);
+        } catch (Exception e) {
+            log.error("获取考试列表失败", e);
+            return Result.error("获取数据失败：" + e.getMessage());
+        }
+    }
     /**
      * 开始考试
      */
@@ -96,6 +119,46 @@ public class ExamController {
             return Result.success("试卷提交成功，正在评分中...");
         } catch (Exception e) {
             log.error("提交试卷失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 查看答卷
+     */
+    @GetMapping("/answer/{scoreId}")
+    public Result getAnswer(@PathVariable Integer scoreId) {
+        try {
+            Account currentUser = TokenUtils.getCurrentUser();
+            if (currentUser == null || !"STUDENT".equalsIgnoreCase(currentUser.getRole())) {
+                return Result.error("请先登录学生账号");
+            }
+            
+            Map<String, Object> answerData = examService.getAnswer(scoreId, currentUser.getId());
+            return Result.success(answerData);
+        } catch (Exception e) {
+            log.error("查看答卷失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 模拟练习 - 生成随机试卷
+     */
+    @PostMapping("/practice")
+    public Result practiceExam(@RequestParam Integer courseId,
+                               @RequestParam(required = false) Integer difficulty,
+                               @RequestParam(required = false) List<String> knowledgePoints) {
+        try {
+            Account currentUser = TokenUtils.getCurrentUser();
+            if (currentUser == null || !"STUDENT".equalsIgnoreCase(currentUser.getRole())) {
+                return Result.error("请先登录学生账号");
+            }
+            
+            Map<String, Object> result = examService.createPracticeExam(currentUser.getId(), courseId, difficulty, knowledgePoints);
+            return Result.success(result);
+        } catch (Exception e) {
+            log.error("创建模拟考试失败", e);
             return Result.error(e.getMessage());
         }
     }
