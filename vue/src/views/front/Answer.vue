@@ -51,10 +51,7 @@
               v-for="option in question.options"
               :key="option.id"
               class="option-item"
-              :class="{
-                'is-correct': option.isCorrect,
-                'is-selected': isSelected(question, option.optionLabel)
-              }"
+              :class="getOptionClass(question, option)"
             >
               <span class="option-label">{{ option.optionLabel }}.</span>
               <span class="option-content">{{ option.optionContent }}</span>
@@ -127,6 +124,21 @@ const isSelected = (question, optionLabel) => {
   }
   // 单选题/判断题
   return answer === optionLabel
+}
+
+// 获取选项样式类
+const getOptionClass = (question, option) => {
+  const selected = isSelected(question, option.optionLabel)
+  
+  // 正确选项 - 绿色
+  if (option.isCorrect) {
+    return 'is-correct'
+  }
+  // 学生选错的选项 - 红色
+  if (selected && !option.isCorrect) {
+    return 'is-wrong'
+  }
+  return ''
 }
 
 // 加载答卷数据
@@ -301,12 +313,12 @@ onMounted(() => {
 
 .option-item.is-correct {
   background: #f0f9f0;
-  border-color: #33d17a;
+  border-color: #67c23a;
 }
 
-.option-item.is-selected {
-  background: #fff5f5;
-  border-color: #e01b24;
+.option-item.is-wrong {
+  background: #fef0f0;
+  border-color: #f56c6c;
 }
 
 .option-label {
@@ -322,14 +334,14 @@ onMounted(() => {
 .correct-icon {
   position: absolute;
   right: 12px;
-  color: #33d17a;
+  color: #67c23a;
   font-size: 18px;
 }
 
 .wrong-icon {
   position: absolute;
   right: 12px;
-  color: #e01b24;
+  color: #f56c6c;
   font-size: 18px;
 }
 

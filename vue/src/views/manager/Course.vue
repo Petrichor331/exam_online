@@ -147,18 +147,27 @@
             <el-button type="primary">上传封面</el-button>
           </el-upload>
         </el-form-item>
-        <el-form-item prop="credit" label="课程内容">
+        <el-form-item prop="credit" label="课程学分">
           <el-input
               v-model="data.form.credit"
               placeholder="请输入课程学分..."
           />
         </el-form-item>
-<!--        <el-form-item prop="teacherName" label="授课教师">-->
-<!--          <el-input-->
-<!--              v-model="data.form.teacherName"-->
-<!--              placeholder="请输入授课教师..."-->
-<!--          />-->
-<!--        </el-form-item>-->
+        <el-form-item prop="teacherName" label="授课教师">
+          <el-input
+              v-model="data.form.teacherName"
+              placeholder="请输入授课教师..."
+          />
+        </el-form-item>
+        <el-form-item prop="code" label="课程码">
+          <el-input
+              v-model="data.form.code"
+              placeholder="留空则无需验证码"
+              maxlength="10"
+              style="flex: 1;"
+          />
+          <el-button @click="generateCode" :icon="Refresh"></el-button>
+        </el-form-item>
 
       </el-form>
       <template #footer>
@@ -360,6 +369,14 @@ const reset = () => {
   data.name = ''
   data.pageNum = 1
   load()
+}
+const generateCode = () =>{
+  const chars='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let code=''
+  for(let i=0;i<7;i++){
+    code+=chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  data.form.code=code
 }
 
 load()

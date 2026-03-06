@@ -47,8 +47,9 @@
       <div class="filter-bar">
         <el-select v-model="filterStatus" placeholder="评分状态" clearable style="width: 120px">
           <el-option label="全部" value="" />
+          <el-option label="待评分" value="waiting" />
           <el-option label="待评分" value="grading" />
-          <el-option label="AI已评分" value="ai_graded" />
+<!--          <el-option label="AI已评分" value="ai_graded" />-->
           <el-option label="已完成" value="finished" />
         </el-select>
         <el-input 
@@ -128,7 +129,7 @@
         <div class="question-list">
           <div 
             v-for="(answer, index) in currentPaper.answers" 
-            :key="answer.answeshidrId"
+            :key="answer.answerId"
             class="question-item"
             :class="{ 'objective': isObjective(answer.questionTypeId) }"
           >
@@ -328,8 +329,9 @@ const getStatusType = (status) => {
 const getStatusText = (status) => {
   const texts = {
     'grading': '待评分',
-    'ai_graded': 'AI已评分',
-    'finished': '已完成'
+    'finished': '已完成',
+    'waiting': '待考试',
+
   };
   return texts[status] || status;
 };
@@ -582,10 +584,7 @@ loadCourseList();
 .fail { color: #f56c6c; }
 .max-score { color: #909399; font-size: 12px; }
 
-/* 改卷弹窗样式 */
-.grade-dialog :deep(.el-dialog__body) {
-  padding: 0;
-}
+
 
 .grade-content {
   max-height: 60vh;

@@ -96,7 +96,7 @@ const logout = () => {
 <style scoped>
 .teacher-container {
   min-height: 100vh;
-  background: #1a1a1a;
+  background: #ffffff;
 }
 
 /* 顶部导航 - 黑底白字 */
@@ -168,7 +168,7 @@ const logout = () => {
   padding: 20px;
   max-width: 1400px;
   margin: 0 auto;
-  background: #1a1a1a;
+  background: #ffffff;
   min-height: calc(100vh - 60px);
 }
 </style>

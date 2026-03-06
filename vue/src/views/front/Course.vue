@@ -72,11 +72,9 @@
         <!-- 课程信息 -->
         <div class="course-info">
           <h3 class="course-name">{{ course.name }}</h3>
-          <p class="course-desc">{{ course.description || '暂无课程描述' }}</p>
-          
+
           <div class="course-meta">
             <span><el-icon><User /></el-icon> {{ course.teacherName || '待定' }}</span>
-            <span><el-icon><Document /></el-icon> {{ course.questionCount || 0 }}题</span>
           </div>
         </div>
         
@@ -85,7 +83,7 @@
           <el-button
             v-if="!course.selected"
             type="primary"
-            @click="selectCourse(course)"
+            @click="openCodeDialog(course)"
             :loading="course.loading"
           >
             选课
@@ -115,6 +113,30 @@
         @current-change="loadCourses"
       />
     </div>
+
+    <el-dialog
+        v-model="codeDialogVisible"
+        title="请输入课程码"
+        width="400px"
+        :close-on-click-modal="false"
+    >
+      <div class="code-dialog-content">
+        <p>请输入课程码</p>
+        <el-input
+            v-model="inputCode"
+            placeholder="请输入课程码"
+            maxlength="10"
+            @keyup.enter="confirmSelectCourse"
+            clearable
+        />
+      </div>
+      <template #footer>
+        <el-button @click="codeDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmSelectCourse" :loading="confirmLoading">
+          确认选课
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -134,6 +156,11 @@ const totalCourses = ref(0)
 const pageNum = ref(1)
 const pageSize = ref(12)
 const total = ref(0)
+
+const codeDialogVisible = ref(false)
+const inputCode = ref('')
+const currentSelectCourse = ref(null)
+const confirmLoading = ref(false)
 
 // 灰色背景数组
 const colors = [
@@ -194,6 +221,37 @@ const markSelectedCourses = async () => {
     }
   } catch (error) {
     console.error('获取已选课程失败:', error)
+  }
+}
+const openCodeDialog = (course) => {
+  currentSelectCourse.value = course
+  inputCode.value = ''
+  codeDialogVisible.value = true
+}
+
+const confirmSelectCourse = async () => {
+  if (!inputCode.value) {
+    ElMessage.warning('请输入课程码')
+    return
+  }
+  const course = currentSelectCourse.value
+  course.loading = true
+  confirmLoading.value = true
+  try {
+    const res = await request.post(`/studentCourse/select/${course.id}?code=${inputCode.value}`)
+    if (res.code === '200') {
+      ElMessage.success('选课成功')
+      course.selected = true
+      myCourseCount.value++
+      codeDialogVisible.value = false
+    } else {
+      ElMessage.error(res.msg || '课程码错误')
+    }
+  }catch ( error){
+    ElMessage.error(error.response?.data?.msg || '选课失败')
+  }finally {
+    course.loading = false
+    confirmLoading.value = false
   }
 }
 
@@ -378,7 +436,7 @@ onMounted(() => {
 
 /* 课程封面 */
 .course-cover {
-  height: 120px;
+  height: 250px;
   position: relative;
   overflow: hidden;
 }

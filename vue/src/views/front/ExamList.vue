@@ -132,7 +132,7 @@ const getStatusText = (status) => {
   const map = {
     'pending': '待考试',
     'ongoing': '进行中',
-    'waiting': '待评分',
+    'grading': '待评分',
     'finished': '已完成'
   }
   return map[status] || '未知'
@@ -142,7 +142,7 @@ const getTagType = (status) => {
   const map = {
     'pending': 'info',
     'ongoing': 'danger',
-    'waiting': 'warning',
+    'grading': 'warning',
     'finished': 'success'
   }
   return map[status] || 'info'

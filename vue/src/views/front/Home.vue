@@ -96,7 +96,7 @@
             <el-icon><Calendar /></el-icon>
             <span>待考科目</span>
           </div>
-          <el-button text @click="goTo('/front/exams')">
+          <el-button text @click="goTo('/front/examList')">
             查看全部 <el-icon><ArrowRight /></el-icon>
           </el-button>
         </div>

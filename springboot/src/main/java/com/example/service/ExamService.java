@@ -90,6 +90,10 @@ public class ExamService {
             // 查询试卷信息
             TestPaper paper = testPaperMapper.selectById(score.getPaperId());
             if (paper != null) {
+                // 过滤掉模拟练习
+                if ("practice".equals(paper.getType())) {
+                    return null;
+                }
                 vo.setName(paper.getName());
                 // 计算题目数量
                 String questionIds = paper.getQuestionIds();
@@ -154,6 +158,11 @@ public class ExamService {
             TestPaper paper = testPaperMapper.selectById(score.getPaperId());
             if (paper == null) continue;
             
+            // 过滤掉模拟练习
+            if ("practice".equals(paper.getType())) {
+                continue;
+            }
+            
             // 搜索过滤
             if (name != null && !name.isEmpty() && !paper.getName().contains(name)) {
                 continue;
@@ -178,7 +187,7 @@ public class ExamService {
             if (score.getTotalScore() != null) {
                 vo.setStatus("finished"); // 已评分
             } else if (score.getSubmitTime() != null) {
-                vo.setStatus("waiting"); // 已交卷，待评分
+                vo.setStatus("grading"); // 已交卷，待评分
             } else {
                 // 未交卷，判断时间
                 LocalDateTime now = LocalDateTime.now();
@@ -188,7 +197,7 @@ public class ExamService {
                 if (now.isBefore(startTime)) {
                     vo.setStatus("pending"); // 未开始
                 } else if (now.isAfter(endTime)) {
-                    vo.setStatus("waiting"); // 已过期，自动交卷
+                    vo.setStatus("grading"); // 已过期，自动交卷
                 } else {
                     vo.setStatus("ongoing"); // 进行中
                 }
@@ -203,6 +212,11 @@ public class ExamService {
             List<TestPaper> papers = testPaperMapper.selectByCourseIdList(sc.getCourseId());
             
             for (TestPaper paper : papers) {
+                // 过滤掉模拟练习
+                if ("practice".equals(paper.getType())) {
+                    continue;
+                }
+                
                 // 搜索过滤
                 if (name != null && !name.isEmpty() && !paper.getName().contains(name)) {
                     continue;
@@ -233,7 +247,7 @@ public class ExamService {
                 if (now.isBefore(startTime)) {
                     vo.setStatus("pending"); // 待考试
                 } else if (now.isAfter(endTime)) {
-                    vo.setStatus("waiting"); // 已过期
+                    vo.setStatus("grading"); // 已过期
                 } else {
                     vo.setStatus("ongoing"); // 进行中
                 }
@@ -256,7 +270,7 @@ public class ExamService {
         switch (status) {
             case "ongoing": return 1;
             case "pending": return 2;
-            case "waiting": return 3;
+            case "grading": return 3;
             case "finished": return 4;
             default: return 5;
         }
@@ -278,6 +292,8 @@ public class ExamService {
         List<TestPaperVO> allPapers = testPaperMapper.selectAll(new TestPaper());
         
         return allPapers.stream()
+            // 只保留非模拟练习的试卷
+            .filter(paper -> !"practice".equals(paper.getType()))
             // 只保留学生已选课程的试卷
             .filter(paper -> courseIds.contains(paper.getCourseId()))
             // 检查学生是否已参加
@@ -317,6 +333,10 @@ public class ExamService {
             // 查询试卷信息
             TestPaper paper = testPaperMapper.selectById(score.getPaperId());
             if (paper != null) {
+                // 过滤掉模拟练习
+                if ("practice".equals(paper.getType())) {
+                    return null;
+                }
                 vo.setExamName(paper.getName());
             }
             
@@ -325,7 +345,7 @@ public class ExamService {
             vo.setSubmitTime(score.getSubmitTime());
             
             return vo;
-        }).collect(Collectors.toList());
+        }).filter(Objects::nonNull).collect(Collectors.toList());
     }
     
     /**
@@ -467,7 +487,7 @@ public class ExamService {
         autoGradeObjectiveQuestions(scoreId);
 
         // 4. 更新考试状态为待评分（不立即显示分数，等教师批改）
-        scoreMapper.updateStatus(scoreId, "waiting");
+        scoreMapper.updateStatus(scoreId, "grading");
 
         // 5. 异步调用AI评分（简答题）
         callPythonGradingAsync(scoreId);

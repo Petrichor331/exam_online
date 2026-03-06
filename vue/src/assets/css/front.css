@@ -66,8 +66,10 @@
     color: #fff !important;
 }
 .el-menu--horizontal .el-menu-item.is-active {
-    color: #656060 !important;
-    border-bottom-color: #0e0d0d !important;
+    color: #fdfdfd !important;
+    border-bottom-color: #fdfdfd !important;
+    background: #0e0d0d !important;
+
 }
 .el-tooltip__trigger {
     outline: none;

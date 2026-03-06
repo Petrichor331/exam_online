@@ -20,8 +20,6 @@ const router = createRouter({
         { path: 'course', meta: { name: '课程信息' }, component: () => import('@/views/manager/Course.vue'),  },
         { path: 'question', meta: { name: '题库信息' }, component: () => import('@/views/manager/Question.vue'),  },
         { path: 'testPaper', meta: { name: '试卷信息' }, component: () => import('@/views/manager/TestPaper.vue'),  },
-        { path: 'grading', meta: { name: '学生答卷' }, component: () => import('@/views/manager/Grading.vue'),  },
-
       ]
     },
     {
@@ -29,9 +27,9 @@ const router = createRouter({
       component: () => import('@/views/TeacherLayout.vue'),
       children: [
         { path: 'home', meta: { name: '教师首页' }, component: () => import('@/views/teacher/Home.vue')  },
-        { path: 'grading', meta: { name: '试卷批阅' }, component: () => import('@/views/manager/Grading.vue'),  },
-        { path: 'course', meta: { name: '课程管理' }, component: () => import('@/views/manager/Course.vue'),  },
-        { path: 'testPaper', meta: { name: '试卷管理' }, component: () => import('@/views/manager/TestPaper.vue'),  },
+        { path: 'grading', meta: { name: '试卷批阅' }, component: () => import('@/views/teacher/Grading.vue'),  },
+        { path: 'course', meta: { name: '课程管理' }, component: () => import('@/views/teacher/Course.vue'),  },
+        { path: 'testPaper', meta: { name: '试卷管理' }, component: () => import('@/views/teacher/TestPaper.vue'),  },
         { path: 'question', meta: { name: '题库管理' }, component: () => import('@/views/manager/Question.vue'),  },
         { path: 'examPlan', meta: { name: '考试安排' }, component: () => import('@/views/manager/ExamPlan.vue'),  },
         { path: 'person', meta: { name: '个人资料' }, component: () => import('@/views/manager/Person.vue'),  },

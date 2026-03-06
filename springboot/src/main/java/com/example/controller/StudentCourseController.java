@@ -24,14 +24,14 @@ public class StudentCourseController {
      * 选课
      */
     @PostMapping("/select/{courseId}")
-    public Result selectCourse(@PathVariable Integer courseId) {
+    public Result selectCourse(@PathVariable Integer courseId,@RequestParam(required = false) String code) {
         try {
             Account currentUser = TokenUtils.getCurrentUser();
             if (currentUser == null || !"STUDENT".equalsIgnoreCase(currentUser.getRole())) {
                 return Result.error("请先登录学生账号");
             }
             
-            studentCourseService.selectCourse(currentUser.getId(), courseId);
+            studentCourseService.selectCourse(currentUser.getId(), courseId,code);
             return Result.success("选课成功");
         } catch (Exception e) {
             return Result.error(e.getMessage());

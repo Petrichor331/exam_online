@@ -1,10 +1,13 @@
 package com.example.service;
 
 import com.example.entity.Account;
+import com.example.entity.Course;
 import com.example.entity.StudentCourse;
+import com.example.mapper.CourseMapper;
 import com.example.mapper.StudentCourseMapper;
 import com.example.utils.TokenUtils;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,12 +21,21 @@ public class StudentCourseService {
     
     @Resource
     private StudentCourseMapper studentCourseMapper;
-    
+    @Autowired
+    private CourseMapper courseMapper;
+
     /**
      * 学生选课
      */
     @Transactional
-    public void selectCourse(Integer studentId, Integer courseId) {
+    public void selectCourse(Integer studentId, Integer courseId,String code) {
+        //先验证课程码是否正确
+        Course course = courseMapper.selectById(courseId);
+        if(course!=null && course.getCode() != null){
+            if(!course.getCode().equals(code)){
+                throw new RuntimeException("课程码错误");
+            }
+        }
         // 检查是否已选
         int count = studentCourseMapper.countByStudentAndCourse(studentId, courseId);
         if (count > 0) {
