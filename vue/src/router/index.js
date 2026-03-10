@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import {getCurrentUser} from "@/utils/userStorage.js";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -30,8 +31,8 @@ const router = createRouter({
         { path: 'grading', meta: { name: '试卷批阅' }, component: () => import('@/views/teacher/Grading.vue'),  },
         { path: 'course', meta: { name: '课程管理' }, component: () => import('@/views/teacher/Course.vue'),  },
         { path: 'testPaper', meta: { name: '试卷管理' }, component: () => import('@/views/teacher/TestPaper.vue'),  },
-        { path: 'question', meta: { name: '题库管理' }, component: () => import('@/views/manager/Question.vue'),  },
-        { path: 'examPlan', meta: { name: '考试安排' }, component: () => import('@/views/manager/ExamPlan.vue'),  },
+        { path: 'question', meta: { name: '题库管理' }, component: () => import('@/views/teacher/Question.vue'),  },
+        { path: 'examPlan', meta: { name: '考试安排' }, component: () => import('@/views/teacher/ExamPlan.vue'),  },
         { path: 'person', meta: { name: '个人资料' }, component: () => import('@/views/manager/Person.vue'),  },
         { path: 'password', meta: { name: '修改密码' }, component: () => import('@/views/teacher/Password.vue'),  },
       ]
@@ -57,6 +58,23 @@ const router = createRouter({
     { path: '/register', component: () => import('@/views/Register.vue') },
     { path: '/:pathMatch(.*)', redirect: '/404' }
   ]
+})
+
+//路由守卫
+router.beforeEach((to, from, next) => {
+  const user = getCurrentUser()
+  //不需要登录的页面
+  const whiteList = ['/login', '/register', '/404']
+  if(whiteList.includes(to.path)){
+    next()
+    return
+  }
+  //需要登录的页面跳转登录页
+  if(! user || !user.id){
+    next('/login')
+    return
+  }
+  next()
 })
 
 export default router

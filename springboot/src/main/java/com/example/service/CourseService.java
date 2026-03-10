@@ -57,4 +57,9 @@ public class CourseService {
         }
     }
 
+    public PageInfo<Course> selectByTeacherId(Integer teacherId) {
+        PageHelper.startPage(1, 10);
+        List<Course> list = courseMapper.selectByTeacherId(teacherId);
+        return PageInfo.of(list);
+    }
 }

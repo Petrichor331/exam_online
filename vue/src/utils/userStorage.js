@@ -42,6 +42,9 @@ export function clearCurrentUser() {
     sessionStorage.removeItem(currentKey)
   }
   sessionStorage.removeItem('xm-user-current')
+  
+  // 清除旧版本的 localStorage
+  localStorage.removeItem('xm-user')
 }
 
 // 更新用户信息

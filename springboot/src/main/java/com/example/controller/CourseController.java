@@ -6,6 +6,7 @@ import com.example.entity.Course;
 import com.example.service.CourseService;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.PushBuilder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,6 +35,12 @@ public class CourseController {
     }
 
 
+
+    /**
+     *
+     * 通过课程id查该课程信息
+     * @return
+     */
     @GetMapping("/selectById/{id}")
     public Result selectById(@PathVariable Integer id){
         Course course = courseService.selectById(id);

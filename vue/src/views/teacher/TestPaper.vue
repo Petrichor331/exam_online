@@ -373,12 +373,12 @@ const load = async () => {
 }
 
 const loadCourses = async () => {
-  const res = await request.get('/course/selectList')
+  const res = await request.get('/course/selectAll')
   if (res.code === '200') data.courseList = res.data || []
 }
 
 const loadTypes = async () => {
-  const res = await request.get('/questionType/selectList')
+  const res = await request.get('/questionType/selectAll')
   if (res.code === '200') data.typeList = res.data || []
 }
 

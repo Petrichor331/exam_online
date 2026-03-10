@@ -41,6 +41,11 @@ public class QuestionController {
         PageInfo<QuestionListVO> questionListVO = questionService.selectPage(pageNum, pageSize, name, courseId, typeId);
         return Result.success(questionListVO);
     }
+
+    /**
+     *
+     * 通过题目id查题目具体信息
+     */
     @GetMapping("/selectById/{id}")
     public Result selectById(@PathVariable Integer id){
         Question question = questionService.selectById(id);
