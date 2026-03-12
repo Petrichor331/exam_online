@@ -3,6 +3,7 @@
     <!-- 顶部信息栏 -->
     <div class="exam-header">
       <div class="header-left">
+        <el-button :icon="ArrowLeft" circle @click="goBack"></el-button>
         <h2>{{ paperName }}</h2>
         <span class="question-progress">题目 {{ currentIndex + 1 }} / {{ questions.length }}</span>
       </div>
@@ -11,6 +12,7 @@
           <el-icon><Timer /></el-icon>
           <span>{{ formatTime(remainingTime) }}</span>
         </div>
+        <el-button @click="saveTempAnswer" :loading="saving"> 保存答案 </el-button>
         <el-button type="primary" @click="submitExam" :loading="submitting">交卷</el-button>
       </div>
     </div>
@@ -148,7 +150,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/utils/request.js'
 import { Timer, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
@@ -163,12 +165,16 @@ const paperId = ref(null)
 const scoreId = ref(null)
 const paperName = ref('')
 const endTime = ref(0)
+const paperEndTime = ref(0)  // 试卷设置的结束时间
 const remainingTime = ref(0)
 const questions = ref([])
 const currentIndex = ref(0)
 const answers = ref({})
+const saving = ref(false)
+const submitted = ref(false)  // 标记是否已提交试卷
 
 let timer = null
+let autoSaveTimer = null
 
 // 计算属性
 const currentQuestion = computed(() => {
@@ -212,12 +218,12 @@ const startExam = async () => {
     const res = await request.post('/exam/start', {
       paperId: paperId.value
     })
-    
     if (res.code === '200') {
       const data = res.data
       scoreId.value = data.scoreId
       paperName.value = data.paperName
       endTime.value = data.endTime
+      paperEndTime.value = data.paperEndTime || 0
       questions.value = data.questions
       
       // 初始化答案对象
@@ -228,7 +234,26 @@ const startExam = async () => {
           answers.value[q.id] = ''
         }
       })
-      
+      //尝试获取临时答案
+      try{
+        const res = await request.get(`/exam/get-temp-answer/${paperId.value}`)
+        if(res.code === '200' && res.data && res.data.answers){
+          res.data.answers.forEach(item => {
+            if(answers.value[item.questionId] !==  undefined){
+              //多选题是数组，需要拆分
+              if(Array.isArray(answers.value[item.questionId])){
+                answers.value[item.questionId] = item.answer ? item.answer.split(',') : []
+              }else{
+                //除了多选题，其他都是字符串
+                answers.value[item.questionId] = item.answer || ''
+              }
+            }
+          })
+          ElMessage.success('已恢复上次考试')
+        }
+      }catch(error){
+
+      }
       // 启动倒计时
       startTimer()
       loading.value = false
@@ -249,15 +274,97 @@ const startTimer = () => {
     updateRemainingTime()
     if (remainingTime.value <= 0) {
       clearInterval(timer)
+      clearInterval(autoSaveTimer)
       ElMessage.warning('考试时间到，正在自动交卷...')
-      submitExam()
+      submitExam(true) //传入true代表自动交卷
     }
   }, 1000)
+  
+  // 每30秒自动保存答案
+  autoSaveTimer = setInterval(() => {
+    saveTempAnswer()
+  }, 30000)
 }
+
+// 检查是否有未保存的答案
+const hasUnsavedAnswer = () => {
+  return Object.values(answers.value).some(ans => {
+    if (Array.isArray(ans)) return ans.length > 0
+    return ans && ans.trim() !== ''
+  })
+}
+
+// 离开确认处理
+const handleLeaveConfirm = async () => {
+  // 如果已提交试卷，直接离开
+  if (submitted.value) {
+    return true
+  }
+  
+  //没有未保存的答案，直接离开
+  if (!hasUnsavedAnswer()) {
+    return true
+  }
+  
+  try {
+    await ElMessageBox.confirm(
+      '确定要离开吗？是否保存当前答案？', 
+      '提示',
+      {
+        confirmButtonText: '保存',
+        cancelButtonText: '不保存',
+        distinguishCancelAndClose: true,
+      }
+    )
+    // 点击"保存" -> 保存后直接返回
+    await saveTempAnswer()
+    ElMessage.success('答案已保存')
+    return true
+  } catch(action) {
+    if (action === 'cancel'){
+      return true //不保存但允许离开
+    }
+    return false//取消离开
+  }
+  
+}
+
+let isNavigatingBack = false
+
+//返回上一页
+const goBack = async () => {
+  isNavigatingBack = true
+  try {
+    const result = await handleLeaveConfirm()
+    if (result === true) {
+      router.back()
+    } else {
+      isNavigatingBack = false
+    }
+  } catch {
+    isNavigatingBack = false  // 异常时也要重置
+  }
+}
+
+// 路由离开守卫
+onBeforeRouteLeave(async () =>{
+  if (isNavigatingBack) {
+    isNavigatingBack = false
+    return true  // 跳过确认
+  }
+  const result = await handleLeaveConfirm()
+  return result === true
+    }
+)
 
 const updateRemainingTime = () => {
   const now = Date.now()
-  remainingTime.value = Math.max(0, endTime.value - now)
+  // 取考试时长结束时间和试卷结束时间中较早的那个
+  let minEndTime = endTime.value
+  if (paperEndTime.value > 0 && paperEndTime.value < minEndTime) {
+    minEndTime = paperEndTime.value
+  }
+  remainingTime.value = Math.max(0, minEndTime - now)
 }
 
 // 题目导航
@@ -277,12 +384,33 @@ const nextQuestion = () => {
   }
 }
 
+//临时保存答案
+const saveTempAnswer = async() =>{
+  saving.value = true
+  try{
+    await request.post('/exam/save-temp-answers',{
+      paperId: paperId.value,
+      answers: questions.value.map(q => ({
+        questionId: q.id,
+        answer: Array.isArray(answers.value[q.id])
+          ? answers.value[q.id].join(',')
+          : answers.value[q.id]
+      }))
+    })
+    ElMessage.success('临时保存成功')
+  }catch ( error){
+    console.error('保存失败',error)
+  }finally {
+    saving.value = false
+  }
+}
+
 // 交卷
-const submitExam = async () => {
+const submitExam = async (force=false) => {
   // 检查未作答题目
   const unanswered = questions.value.filter(q => !isAnswered(q.id))
-  
-  if (unanswered.length > 0) {
+  //如果不是强制交卷，且还有未作答题目
+  if (!force && unanswered.length > 0) {
     try {
       await ElMessageBox.confirm(
         `还有 ${unanswered.length} 道题未作答，确定要交卷吗？`,
@@ -297,7 +425,6 @@ const submitExam = async () => {
       return
     }
   }
-  
   submitting.value = true
   try {
     // 保存答案
@@ -316,6 +443,7 @@ const submitExam = async () => {
     // 提交试卷
     await request.post(`/exam/submit/${scoreId.value}`)
     
+    submitted.value = true  // 标记已提交
     ElMessage.success('交卷成功！')
     router.push('/front/myCourse')
   } catch (error) {
@@ -339,6 +467,32 @@ onUnmounted(() => {
   if (timer) {
     clearInterval(timer)
   }
+  if (autoSaveTimer) {
+    clearInterval(autoSaveTimer)
+  }
+})
+
+onMounted(()=>{
+  //监听页面关闭/刷新，尝试自动保存
+  window.addEventListener('beforeunload', (e) => {
+    if (hasUnsavedAnswer()) {
+      // 尝试使用 sendBeacon 自动保存（异步，不阻塞页面关闭）
+      const answerList = questions.value.map(q => ({
+        questionId: q.id,
+        answer: Array.isArray(answers.value[q.id])
+          ? answers.value[q.id].join(',')
+          : answers.value[q.id]
+      }))
+      
+      const data = JSON.stringify({
+        paperId: paperId.value,
+        answers: answerList
+      })
+      navigator.sendBeacon('http://localhost:9090/exam/save-temp-answers', new Blob([data], {type: 'application/json'}))
+      
+      e.returnValue = '答案正在保存...'
+    }
+  })
 })
 </script>
 

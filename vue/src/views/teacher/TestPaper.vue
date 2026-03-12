@@ -237,11 +237,12 @@
       <el-table
         ref="questionTableRef"
         :data="data.questionList"
+        :row-key="(row) => row.id"
         @selection-change="handleQuestionSelectionChange"
         stripe
         max-height="400"
       >
-        <el-table-column type="selection" width="40" />
+        <el-table-column type="selection" width="40" :reserve-selection="true" />
         <el-table-column prop="name" label="题目内容" show-overflow-tooltip />
         <el-table-column prop="typeName" label="题型" width="80" />
         <el-table-column prop="score" label="分值" width="60" />
@@ -257,7 +258,7 @@
       </div>
       <template #footer>
         <el-button @click="data.questionSelectVisible = false">取消</el-button>
-        <el-button type="primary" @click="confirmQuestionSelect">确认选择（{{ data.tempSelectedQuestions.length }}个）</el-button>
+        <el-button type="primary" @click="confirmQuestionSelect">确认选择</el-button>
       </template>
     </el-dialog>
 
@@ -513,6 +514,12 @@ const reset = () => {
 const showQuestionSelectDialog = () => {
   data.questionSelectVisible = true
   data.tempSelectedQuestions = [...data.selectedQuestions]
+  // 重置分页和搜索条件
+  data.questionPageNum = 1
+  data.questionSearch.name = ''
+  data.questionSearch.typeId = null
+  // 清除之前的选择状态
+  questionTableRef.value?.clearSelection()
   loadQuestions()
 }
 
@@ -524,7 +531,8 @@ const loadQuestions = async () => {
         pageNum: data.questionPageNum,
         pageSize: data.questionPageSize,
         name: data.questionSearch.name,
-        typeId: data.questionSearch.typeId
+        typeId: data.questionSearch.typeId,
+        courseId: data.form.courseId
       }
     })
     if (res.code === '200') {
@@ -537,12 +545,24 @@ const loadQuestions = async () => {
 }
 
 const handleQuestionSelectionChange = (rows) => {
-  data.tempSelectedQuestions = rows
+  // 使用 reserve-selection 后，el-table 会自动保持跨页选中
+  // 这里不需要手动维护，直接用 rows 即可
 }
 
 const confirmQuestionSelect = () => {
-  data.selectedQuestions = [...data.tempSelectedQuestions]
+  // 从表格中获取所有选中的题目（reserve-selection会自动保持跨页选中）
+  const selection = questionTableRef.value?.getSelectionRows() || []
+  
+  // 合并：已选题目 + 当前选中的题目（去重）
+  const existingIds = data.selectedQuestions.map(q => q.id)
+  const newQuestions = selection.filter(q => !existingIds.includes(q.id))
+  
+  data.selectedQuestions = [...data.selectedQuestions, ...newQuestions]
   data.form.questionIds = data.selectedQuestions.map(q => q.id)
+  
+  // 清除表格的选中状态（为下次打开做准备）
+  questionTableRef.value?.clearSelection()
+  
   data.questionSelectVisible = false
 }
 

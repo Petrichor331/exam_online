@@ -12,6 +12,7 @@ public class StartExamVO {
     private String paperName;//试卷名称
     private Integer time;//考试时长
     private Long endTime;//结束时间，用当前时间加上考试时长
+    private Long paperEndTime;//试卷设置的结束时间（时间戳）
     private List<ExamQuestionVO> questions;//题目列表
 
 
@@ -45,6 +46,14 @@ public class StartExamVO {
 
     public void setTime(Integer time) {
         this.time = time;
+    }
+
+    public Long getPaperEndTime() {
+        return paperEndTime;
+    }
+
+    public void setPaperEndTime(Long paperEndTime) {
+        this.paperEndTime = paperEndTime;
     }
 
     public Long getEndTime() {

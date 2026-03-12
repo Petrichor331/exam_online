@@ -136,8 +136,8 @@
             <span class="exam-name">{{ score.examName }}</span>
             <span class="exam-time">{{ score.submitTime }}</span>
           </div>
-          <div class="score-value" :class="getScoreClass(score.score, score.totalScore)">
-            {{ score.score }}<span class="total">/{{ score.totalScore }}</span>
+          <div class="score-value" :class="score.score !== null ? getScoreClass(score.score, score.totalScore) : 'pending'">
+            {{ score.score !== null ? score.score : '待批改' }}<span class="total" v-if="score.score !== null">/{{ score.totalScore }}</span>
           </div>
         </div>
       </div>
@@ -579,6 +579,7 @@ onMounted(() => {
 .score-value.excellent { color: #333; }
 .score-value.pass { color: #555; }
 .score-value.fail { color: #777; }
+.score-value.pending { color: #909399; font-size: 14px; }
 
 /* 空状态 */
 .empty-state {

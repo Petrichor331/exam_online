@@ -15,6 +15,21 @@ spring:
       max-file-size: 5MB
       max-request-size: 50MB
 
+  # Redis配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      database: 0
+      timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+
 # 配置mybatis实体和xml映射
 mybatis:
   configuration:

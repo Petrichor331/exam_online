@@ -156,11 +156,11 @@
             <div class="score-right">
               <div
                   class="score-num"
-                  :class="getScoreClass(score.score, score.totalScore)"
+                  :class="score.score !== null ? getScoreClass(score.score, score.totalScore) : 'pending'"
               >
-                {{ score.score }}
+                {{ score.score !== null ? score.score : '待批改' }}
               </div>
-              <div class="score-total">/ {{ score.totalScore }}</div>
+              <div class="score-total" v-if="score.score !== null">/ {{ score.totalScore }}</div>
             </div>
           </div>
         </div>
@@ -640,6 +640,7 @@ onUnmounted(() => {
 .score-num.excellent { color: #333; }
 .score-num.pass { color: #555; }
 .score-num.fail { color: #777; }
+.score-num.pending { color: #909399; font-size: 14px; }
 
 .score-total {
   font-size: 14px;

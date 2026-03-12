@@ -103,7 +103,34 @@ public class ExamController {
             return Result.error(e.getMessage());
         }
     }
-    
+
+    /**
+     * 保存临时答案（中途退出）
+     */
+    @PostMapping("/save-temp-answers")
+    public Result saveTempAnswers(@RequestBody SaveAnswerDTO dto) {
+        Account currentUser = TokenUtils.getCurrentUser();
+        if(currentUser == null || !"STUDENT".equalsIgnoreCase(currentUser.getRole())){
+            return Result.error("请先登录学生账号");
+        }
+        examService.saveTempAnswer(currentUser.getId(), dto.getPaperId(), dto);
+        return Result.success();
+    }
+
+    /**
+     * 获取临时答案
+     */
+    @GetMapping("/get-temp-answer/{paperId}")
+    public Result getTempAnswer(@PathVariable Integer paperId){
+        Account currentUser = TokenUtils.getCurrentUser();
+        if(currentUser == null || !"STUDENT".equalsIgnoreCase(currentUser.getRole())){
+            return Result.error("请先登录学生账号");
+        }
+        SaveAnswerDTO saveAnswerDTO = examService.getTempAnswer(currentUser.getId(), paperId);
+        return Result.success(saveAnswerDTO);
+    }
+
+
     /**
      * 提交试卷
      */

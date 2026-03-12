@@ -1,5 +1,6 @@
 package com.example.service;
 
+import com.alibaba.fastjson.JSON;
 import com.example.common.dto.QuestionOptionDTO;
 import com.example.common.vo.*;
 import com.example.common.dto.SaveAnswerDTO;
@@ -13,6 +14,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -49,6 +52,10 @@ public class ExamService {
 
     @Resource
     private QuestionTypeMapper questionTypeMapper;
+
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
+
     @Autowired
     private QuestionOptionMapper questionOptionMapper;
     
@@ -89,37 +96,74 @@ public class ExamService {
             
             // 查询试卷信息
             TestPaper paper = testPaperMapper.selectById(score.getPaperId());
-            if (paper != null) {
-                // 过滤掉模拟练习
-                if ("practice".equals(paper.getType())) {
-                    return null;
-                }
-                vo.setName(paper.getName());
-                // 计算题目数量
-                String questionIds = paper.getQuestionIds();
-                if (questionIds != null && !questionIds.isEmpty()) {
-                    vo.setQuestionCount(questionIds.split(",").length);
-                } else {
-                    vo.setQuestionCount(0);
-                }
-                
-                // 计算剩余时间（秒）
-                LocalDateTime endTime = LocalDateTime.parse(paper.getEnd(), 
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                long remainingSeconds = java.time.Duration.between(LocalDateTime.now(), endTime).getSeconds();
-                
-                // 如果考试已过期，不再显示在"进行中"
-                if (remainingSeconds <= 0) {
-                    return null;
-                }
-                
-                vo.setRemainingSeconds((int) remainingSeconds);
-                vo.setTotalScore(100); // 默认总分
-                
-                Integer teacherId = paper.getTeacherId();
-                Teacher teacher = teacherMapper.selectById(teacherId);
-                vo.setTeacherName(teacher.getName());
+            if (paper == null) {
+                return null;  // 试卷不存在，跳过
             }
+            
+            // 过滤掉模拟练习
+            if ("practice".equals(paper.getType())) {
+                return null;
+            }
+            
+            vo.setName(paper.getName());
+            // 计算题目数量
+            String questionIds = paper.getQuestionIds();
+            if (questionIds != null && !questionIds.isEmpty()) {
+                vo.setQuestionCount(questionIds.split(",").length);
+            } else {
+                vo.setQuestionCount(0);
+            }
+            
+            // 从 Redis 读取考试开始时间
+            String startKey = "exam:start:" + studentId + ":" + paper.getId();
+            Object startObj = redisTemplate.opsForValue().get(startKey);
+            
+            long examStartTime = 0;
+            if (startObj != null) {
+                examStartTime = Long.parseLong(startObj.toString());
+            }
+            
+            // 如果没有开始时间，使用当前时间
+            if (examStartTime == 0) {
+                examStartTime = System.currentTimeMillis();
+            }
+            
+            // 计算考试时长结束时间
+            long examDurationEndTime = examStartTime + paper.getTime() * 60 * 1000;
+            
+            // 试卷设置的结束时间
+            Long paperEndTime = null;
+            if (paper.getEnd() != null && !paper.getEnd().isEmpty()) {
+                try {
+                    paperEndTime = java.time.LocalDateTime.parse(paper.getEnd(), 
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                        .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+                } catch (Exception e) {
+                    log.warn("解析试卷结束时间失败: {}", paper.getEnd());
+                }
+            }
+            
+            // 取两个时间中较早的作为最终结束时间
+            long finalEndTime = examDurationEndTime;
+            if (paperEndTime != null && paperEndTime < examDurationEndTime) {
+                finalEndTime = paperEndTime;
+            }
+            
+            // 计算剩余时间（秒）
+            long remainingSeconds = (finalEndTime - System.currentTimeMillis()) / 1000;
+            
+            // 如果考试已过期，不再显示在"进行中"
+            if (remainingSeconds <= 0) {
+                return null;
+            }
+            
+            vo.setRemainingSeconds((int) remainingSeconds);
+            vo.setTotalScore(100); // 默认总分
+            
+            Integer teacherId = paper.getTeacherId();
+            Teacher teacher = teacherMapper.selectById(teacherId);
+            vo.setTeacherName(teacher.getName());
+            
             return vo;
         }).filter(vo -> vo != null).collect(Collectors.toList());
         
@@ -340,7 +384,16 @@ public class ExamService {
                 vo.setExamName(paper.getName());
             }
             
-            vo.setScore(score.getTotalScore() != null ? score.getTotalScore().doubleValue() : 0.0);
+            // 设置状态
+            vo.setStatus(score.getStatus());
+            
+            // 只有已完成(finished)才显示分数，否则显示待批改
+            if ("finished".equals(score.getStatus())) {
+                vo.setScore(score.getTotalScore() != null ? score.getTotalScore().doubleValue() : 0.0);
+            } else {
+                vo.setScore(null);  // 待批改状态不显示分数
+            }
+            
             vo.setTotalScore(100); // 默认总分
             vo.setSubmitTime(score.getSubmitTime());
             
@@ -356,36 +409,75 @@ public class ExamService {
         // 检查是否已参加
         int count = scoreMapper.countByStudentAndPaper(studentId, paperId);
         if (count > 0) {
-            Score existingScore = scoreMapper.selectByPaperIdAndStudentId(paperId,studentId);
-            if(existingScore!=null){
-                return buildStartExamVO(existingScore,paperId);
+            Score existingScore = scoreMapper.selectByPaperIdAndStudentId(paperId, studentId);
+            if (existingScore != null) {
+                // 从 Redis 读取开始时间
+                String startKey = "exam:start:" + studentId + ":" + paperId;
+                Object startObj = redisTemplate.opsForValue().get(startKey);
+                log.info("读取Redis key: {}, 值: {}", startKey, startObj);
+                
+                long examStartTime = startObj != null ? Long.parseLong(startObj.toString()) : System.currentTimeMillis();
+                log.info("计算examStartTime: {}", examStartTime);
+
+                TestPaper testPaper = testPaperMapper.selectById(paperId);
+                long examDurationEndTime = examStartTime + testPaper.getTime() * 60 * 1000;
+                log.info("计算examDurationEndTime: {}, 当前时间: {}", examDurationEndTime, System.currentTimeMillis());
+
+                return buildStartExamVO(existingScore, testPaper, examDurationEndTime);
             }
             throw new RuntimeException("您已参加过该考试");
         }
 
-        // 创建score记录
+        // 首次开始，保存开始时间到 Redis
+        long examStartTime = System.currentTimeMillis();
+        String startKey = "exam:start:" + studentId + ":" + paperId;
+        redisTemplate.opsForValue().set(startKey, examStartTime, 24, TimeUnit.HOURS);
+        log.info("保存Redis key: {}, 值: {}", startKey, examStartTime);
+
+        // 创建 score 记录
         Score score = new Score();
         score.setStudentId(studentId);
         score.setPaperId(paperId);
         score.setStatus("ongoing");
         scoreMapper.insert(score);
-        return buildStartExamVO(score,paperId);
 
+        TestPaper testPaper = testPaperMapper.selectById(paperId);
+        long examDurationEndTime = examStartTime + testPaper.getTime() * 60 * 1000;
+
+        return buildStartExamVO(score, testPaper, examDurationEndTime);
     }
 
-    private StartExamVO buildStartExamVO(Score score, Integer paperId){
-        // 创建考试记录
+    // 用于已有 score 记录（重新进入考试）
+    private StartExamVO buildStartExamVO(Score score, TestPaper testPaper, long examDurationEndTime) {
         StartExamVO startExamVO = new StartExamVO();
         startExamVO.setScoreId(score.getId());
-        startExamVO.setPaperId(paperId);
-        TestPaper testPaper = testPaperMapper.selectById(paperId);
+        startExamVO.setPaperId(testPaper.getId());
         startExamVO.setPaperName(testPaper.getName());
         startExamVO.setTime(testPaper.getTime());
-        startExamVO.setEndTime(System.currentTimeMillis() + testPaper.getTime() * 60 * 1000);
+        
+        // 试卷设置的结束时间
+        Long paperEndTime = null;
+        if (testPaper.getEnd() != null && !testPaper.getEnd().isEmpty()) {
+            try {
+                paperEndTime = java.time.LocalDateTime.parse(testPaper.getEnd(), 
+                    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                    .atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+            } catch (Exception e) {
+                log.warn("解析试卷结束时间失败: {}", testPaper.getEnd());
+            }
+        }
+        startExamVO.setPaperEndTime(paperEndTime);
+
+        // 取两个时间中较早的作为最终结束时间
+        if (paperEndTime != null && paperEndTime < examDurationEndTime) {
+            startExamVO.setEndTime(paperEndTime);
+        } else {
+            startExamVO.setEndTime(examDurationEndTime);
+        }
 
         List<ExamQuestionVO> questions = new ArrayList<>();
         String[] questionIds = testPaper.getQuestionIds().split(",");
-        for(String questionId : questionIds){
+        for (String questionId : questionIds) {
             Integer qId = Integer.parseInt(questionId);
             Question question = questionMapper.selectById(qId);
             ExamQuestionVO examQuestionVO = new ExamQuestionVO();
@@ -395,15 +487,14 @@ public class ExamService {
             examQuestionVO.setScore(question.getScore());
             QuestionType questionType = questionTypeMapper.selectById(question.getTypeId());
             examQuestionVO.setTypeName(questionType.getName());
-            if(question.getTypeId() == 1 || question.getTypeId() == 2){
+            if (question.getTypeId() == 1 || question.getTypeId() == 2) {
                 List<QuestionOptionDTO> options = questionOptionMapper.selectOptionsForExam(question.getId());
                 examQuestionVO.setOptions(options);
-            }else{
+            } else {
                 examQuestionVO.setOptions(null);
             }
             questions.add(examQuestionVO);
         }
-        // 按题型ID排序：单选(1) -> 多选(2) -> 判断(3) -> 填空(4) -> 简答(5)
         questions.sort(Comparator.comparing(ExamQuestionVO::getTypeId));
         startExamVO.setQuestions(questions);
         return startExamVO;
@@ -491,6 +582,10 @@ public class ExamService {
 
         // 5. 异步调用AI评分（简答题）
         callPythonGradingAsync(scoreId);
+
+        // 6. 删除 Redis 中的开始时间
+        String startKey = "exam:start:" + score.getStudentId() + ":" + score.getPaperId();
+        redisTemplate.delete(startKey);
     }
 
     /**
@@ -759,5 +854,27 @@ public class ExamService {
         }
         
         return result;
+    }
+
+    /**
+     * 保存临时答案到redis
+     */
+    public void saveTempAnswer(Integer studentId, Integer paperId, SaveAnswerDTO dto){
+        String key = "exam:temp:" + studentId + ":" + paperId;
+        TestPaper testPaper = testPaperMapper.selectById(paperId);
+        redisTemplate.opsForValue().set(key, dto, testPaper.getTime(), TimeUnit.MINUTES);
+
+        log.info("保存临时答案成功，studentId: {}, paperId: {}", studentId, paperId);
+    }
+
+    public SaveAnswerDTO getTempAnswer(Integer studentId, Integer paperId){
+        String key = "exam:temp:" + studentId + ":" + paperId;
+        Object obj = redisTemplate.opsForValue().get(key);
+        if(obj != null){
+            //讲Object转回DTO，要先转成json再转成DTO
+            String json = JSON.toJSONString(obj);
+            return JSON.parseObject(json, SaveAnswerDTO.class);
+        }
+        return null;
     }
 }

@@ -58,5 +58,6 @@ public class HomeDataVO {
         private Double score;            // 最终得分
         private Integer totalScore;      // 总分
         private String submitTime;       // 提交时间
+        private String status;           // 考试状态：ongoing进行中, grading待评分, finished已完成
     }
 }

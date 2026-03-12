@@ -223,15 +223,27 @@ public class TestPaperService {
         private List<Question> questions;
         private double fitness;
         private int totalScore;
-        
+
         public PaperChromosome(List<Question> questions) {
             this.questions = questions;
             this.questionIds = questions.stream()
                     .map(Question::getId)
                     .collect(Collectors.toList());
-            this.totalScore = questions.stream()
-                    .mapToInt(Question::getScore)
-                    .sum();
+            this.totalScore = calculateFixedTotalScore( questions);
+        }
+        private int calculateFixedTotalScore(List<Question> questions) {
+            Map<Integer, Long> typeCount = questions.stream()
+                    .collect(Collectors.groupingBy(Question::getTypeId, Collectors.counting()));
+
+            int score = 0;
+            for (Map.Entry<Integer, int[]> entry : FIXED_TYPE_CONFIG.entrySet()) {
+                int typeId = entry.getKey();
+                int countPerType = entry.getValue()[0];
+                int scorePerQuestion = entry.getValue()[1];
+                long actualCount = typeCount.getOrDefault(typeId, 0L);
+                score += actualCount * scorePerQuestion;
+            }
+            return score;
         }
         
         public void setQuestions(List<Question> questions) {
@@ -286,56 +298,101 @@ public class TestPaperService {
     /**
      * 计算适应度 - 固定题型数量
      */
+    /**
+     * 改进的适应度计算 - 知识点覆盖更精细
+     */
     private double calculateFitnessWithFixedTypes(PaperChromosome paper, Integer targetDifficulty,
                                                   List<String> targetKnowledgePoints, int targetScore) {
         List<Question> questions = paper.getQuestions();
-        
-        // 1. 题型数量匹配度（权重40%）- 最重要，必须严格匹配
+
+        // 1. 题型数量匹配度（权重35%）- 硬约束
+        double typeFitness = calculateTypeMatchScore(questions);
+
+        // 2. 总分匹配度（权重25%）- 硬约束
+        double scoreFitness = (paper.getTotalScore() == targetScore) ? 1.0 : 0.0;
+
+        // 3. 难度匹配度（权重20%）- 改进：分段匹配
+        double difficultyFitness = calculateDifficultyScore(questions, targetDifficulty);
+
+        // 4. 知识点覆盖率（权重20%）- 改进：权重覆盖+分布均匀性
+        double knowledgeFitness = calculateKnowledgeScore(questions, targetKnowledgePoints);
+
+        return typeFitness * 0.35 + scoreFitness * 0.25 +
+                difficultyFitness * 0.20 + knowledgeFitness * 0.20;
+    }
+
+    /**
+     * 题型匹配 - 严格匹配得1分，否则按差距扣分
+     */
+    private double calculateTypeMatchScore(List<Question> questions) {
         Map<Integer, Long> typeCount = questions.stream()
                 .collect(Collectors.groupingBy(Question::getTypeId, Collectors.counting()));
-        
-        int typeMatchCount = 0;
+
+        double score = 0;
         for (Map.Entry<Integer, int[]> entry : FIXED_TYPE_CONFIG.entrySet()) {
-            int typeId = entry.getKey();
-            int requiredCount = entry.getValue()[0];
-            long actualCount = typeCount.getOrDefault(typeId, 0L);
-            if (actualCount == requiredCount) {
-                typeMatchCount++;
-            }
+            int required = entry.getValue()[0];
+            long actual = typeCount.getOrDefault(entry.getKey(), 0L);
+            int diff = (int) Math.abs(actual - required);
+            score += Math.max(0, 1.0 - diff * 0.5);  // 差1题扣0.5，差2题不得分
         }
-        double typeFitness = typeMatchCount / 5.0; // 5种题型
-        
-        // 2. 总分匹配度（权重30%）- 应该正好是100分
-        int totalScore = paper.getTotalScore();
-        double scoreFitness = (totalScore == targetScore) ? 1.0 : 0.0;
-        
-        // 3. 难度匹配度（权重20%）
+        return score / 5.0;
+    }
+
+    /**
+     * 难度匹配 - 不仅看平均，还看分布
+     */
+    private double calculateDifficultyScore(List<Question> questions, int targetDifficulty) {
+        // 平均难度匹配
         double avgDifficulty = questions.stream()
                 .mapToInt(Question::getDifficulty)
                 .average()
                 .orElse(3.0);
-        double difficultyFitness = 1.0 - Math.abs(avgDifficulty - targetDifficulty) / 4.0;
-        
-        // 4. 知识点覆盖率（权重10%）
-        double knowledgeFitness = 0;
-        if (targetKnowledgePoints != null && !targetKnowledgePoints.isEmpty()) {
-            Set<String> covered = questions.stream()
-                    .map(Question::getKnowledgePoint)
-                    .filter(kp -> kp != null && !kp.isEmpty())
-                    .collect(Collectors.toSet());
-            long matched = targetKnowledgePoints.stream()
-                    .filter(covered::contains)
-                    .count();
-            knowledgeFitness = (double) matched / targetKnowledgePoints.size();
-        } else {
-            knowledgeFitness = 1.0;
-        }
-        
-        // 综合适应度
-        return typeFitness * 0.40 + scoreFitness * 0.30 + 
-               difficultyFitness * 0.20 + knowledgeFitness * 0.10;
+        double avgScore = 1.0 - Math.abs(avgDifficulty - targetDifficulty) / 4.0;
+
+        // 难度分布均匀性（标准差）
+        double variance = questions.stream()
+                .mapToDouble(q -> Math.pow(q.getDifficulty() - avgDifficulty, 2))
+                .average()
+                .orElse(0);
+        double stdDev = Math.sqrt(variance);
+        double uniformScore = 1.0 / (1.0 + stdDev);  // 标准差越小越好
+
+        return avgScore * 0.7 + uniformScore * 0.3;
     }
-    
+
+    /**
+     * 知识点覆盖 - 加权覆盖+避免重复
+     */
+    private double calculateKnowledgeScore(List<Question> questions, List<String> targetPoints) {
+        if (targetPoints == null || targetPoints.isEmpty()) return 1.0;
+
+        // 统计各知识点出现次数
+        Map<String, Long> pointCount = questions.stream()
+                .map(Question::getKnowledgePoint)
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(p -> p, Collectors.counting()));
+
+        // 加权覆盖：重要知识点权重更高
+        double weightedCoverage = 0;
+        double totalWeight = 0;
+        for (int i = 0; i < targetPoints.size(); i++) {
+            String point = targetPoints.get(i);
+            double weight = (targetPoints.size() - i) / (double) targetPoints.size();  // 靠前的权重高
+            totalWeight += weight;
+            if (pointCount.containsKey(point)) {
+                weightedCoverage += weight;
+            }
+        }
+
+        // 重复度惩罚：同一知识点出现多次扣分
+        long duplicates = pointCount.values().stream()
+                .filter(count -> count > 1)
+                .mapToLong(count -> count - 1)
+                .sum();
+        double duplicatePenalty = Math.min(0.3, duplicates * 0.05);
+
+        return (weightedCoverage / totalWeight) - duplicatePenalty;
+    }
     /**
      * 选择操作（轮盘赌选择 + 精英保留）
      */
