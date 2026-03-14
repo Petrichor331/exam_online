@@ -3,6 +3,7 @@ package com.example.controller;
 
 import com.example.common.Result;
 import com.example.common.dto.QuestionAddDTO;
+import com.example.common.vo.ExamQuestionVO;
 import com.example.common.vo.QuestionListVO;
 import com.example.entity.Question;
 import com.example.entity.QuestionOption;
@@ -36,9 +37,11 @@ public class QuestionController {
             @RequestParam Integer pageSize,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Integer courseId,
-            @RequestParam(required = false) Integer typeId
+            @RequestParam(required = false) Integer typeId,
+            @RequestParam(required = false) Integer difficulty,
+            @RequestParam(required = false) List<String> knowledgePoints
     ) {
-        PageInfo<QuestionListVO> questionListVO = questionService.selectPage(pageNum, pageSize, name, courseId, typeId);
+        PageInfo<QuestionListVO> questionListVO = questionService.selectPage(pageNum, pageSize, name, courseId, typeId, difficulty, knowledgePoints);
         return Result.success(questionListVO);
     }
 
@@ -77,6 +80,35 @@ public class QuestionController {
         questionService.deleteBatch(ids);
         return Result.success();
     }
-    
+
+    /**
+     * 刷题 - 随机获取题目
+     */
+    @GetMapping("/random")
+    public Result getRandomQuestions(
+            @RequestParam Integer courseId,
+            @RequestParam(required = false) List<Integer> typeIds,
+            @RequestParam(required = false) List<String> knowledgePoints,
+            @RequestParam(required = false) Integer difficulty,
+            @RequestParam(required = false, defaultValue = "10") Integer count
+    ) {
+        List<ExamQuestionVO> questions = questionService.getRandomQuestions(courseId, typeIds, knowledgePoints, difficulty, count);
+        return Result.success(questions);
+    }
+
+    /**
+     * 刷题 - 获取课程所有题目
+     */
+    @GetMapping("/list")
+    public Result getQuestionList(
+            @RequestParam Integer courseId,
+            @RequestParam(required = false) List<Integer> typeIds,
+            @RequestParam(required = false) List<String> knowledgePoints,
+            @RequestParam(required = false) Integer difficulty
+    ) {
+        List<ExamQuestionVO> questions = questionService.getQuestionsByCourse(courseId, typeIds, knowledgePoints, difficulty);
+        return Result.success(questions);
+    }
+
 
 }

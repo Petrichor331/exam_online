@@ -10,11 +10,24 @@
             class="search-input"
             clearable
             @keyup.enter="load"
-        >
-          <template #append>
-            <el-button :icon="Search" type="primary" @click="load">搜索</el-button>
-          </template>
-        </el-input>
+        />
+        <el-select v-model="data.typeId" placeholder="题型" clearable class="search-select">
+          <el-option
+              v-for="type in data.typeList"
+              :key="type.id"
+              :label="type.name"
+              :value="type.id"
+          />
+        </el-select>
+        <el-select v-model="data.difficulty" placeholder="难度" clearable class="search-select">
+          <el-option
+              v-for="item in difficultyOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+          />
+        </el-select>
+        <el-button :icon="Search" type="primary" @click="load">搜索</el-button>
       </div>
       <div class="search-right">
         <el-button @click="reset" :icon="RefreshRight">重置</el-button>
@@ -376,6 +389,15 @@ const difficultyLabels = {
   5: '非常困难'
 }
 
+// 难度选项
+const difficultyOptions = [
+  { value: 1, label: '非常简单' },
+  { value: 2, label: '简单' },
+  { value: 3, label: '中等' },
+  { value: 4, label: '困难' },
+  { value: 5, label: '非常困难' }
+]
+
 // 获取难度标签颜色
 const getDifficultyType = (val) => {
   const types = { 1: 'success', 2: 'success', 3: 'warning', 4: 'danger', 5: 'danger' }
@@ -431,7 +453,10 @@ const data = reactive({
   name: '',
   ids: [],
   loading: false,
-  saving: false
+  saving: false,
+  typeId: null,
+  difficulty: null,
+  knowledgePoint: null,
 })
 
 
@@ -443,7 +468,9 @@ const load = async () => {
       params: {
         pageNum: data.pageNum,
         pageSize: data.pageSize,
-        name: data.name
+        name: data.name,
+        typeId: data.typeId,
+        difficulty: data.difficulty,
       }
     })
     if (res.code === '200') {
@@ -636,6 +663,8 @@ const save = () => {
 
 const reset = () => {
   data.name = ''
+  data.typeId = null
+  data.difficulty = null
   data.pageNum = 1
   load()
 }
@@ -650,6 +679,8 @@ const loadCourses = async () => {
   const res = await request.get('/course/selectAll')
   data.courseList = res.data
 }
+
+
 
 // 页面初始化时加载
 loadTypes()
@@ -677,9 +708,21 @@ load()
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
 }
 
-.search-input {
-  width: 320px;
+.search-left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
 }
+
+.search-input {
+  width: 200px;
+}
+
+.search-select {
+  width: 140px;
+}
+
 
 /* 工具栏卡片 */
 .toolbar-card {

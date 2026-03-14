@@ -12,7 +12,7 @@
         <el-icon><Reading /></el-icon>
         <span>选择课程</span>
       </div>
-      
+
       <el-row :gutter="20" v-loading="courseLoading">
         <el-col :span="8" v-for="course in courseList" :key="course.id">
           <el-card class="course-card" shadow="hover" @click="selectCourse(course)">
@@ -50,15 +50,47 @@
           v-model="searchName"
           placeholder="搜索题目名称..."
           clearable
-          style="width: 300px;"
+          style="width: 200px;"
           @keyup.enter="loadQuestions"
         >
           <template #prefix>
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
+        <el-select v-model="searchTypeId" placeholder="题型" clearable style="width: 120px;">
+          <el-option
+            v-for="type in typeList"
+            :key="type.id"
+            :label="type.name"
+            :value="type.id"
+          />
+        </el-select>
+        <el-select v-model="searchDifficulty" placeholder="难度" clearable style="width: 120px;">
+          <el-option
+            v-for="item in difficultyOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+        <el-select
+          v-model="searchKnowledgePoint"
+          placeholder="知识点"
+          clearable
+          filterable
+          allow-create
+          default-first-option
+          style="width: 150px;"
+        >
+          <el-option
+            v-for="kp in knowledgePointList"
+            :key="kp"
+            :label="kp"
+            :value="kp"
+          />
+        </el-select>
         <el-button type="primary" @click="loadQuestions">搜索</el-button>
-        <el-button @click="searchName = ''; loadQuestions()">重置</el-button>
+        <el-button @click="resetSearch">重置</el-button>
       </div>
 
       <!-- 题目列表 -->
@@ -210,6 +242,19 @@ const courseLoading = ref(false)
 const courseList = ref([])
 const typeList = ref([])
 const searchName = ref('')
+const searchTypeId = ref(null)
+const searchDifficulty = ref(null)
+const searchKnowledgePoint = ref(null)
+const knowledgePointList = ref([])
+
+// 难度选项
+const difficultyOptions = [
+  { value: 1, label: '非常简单' },
+  { value: 2, label: '简单' },
+  { value: 3, label: '中等' },
+  { value: 4, label: '困难' },
+  { value: 5, label: '非常困难' }
+]
 
 const data = reactive({
   formVisible: false,
@@ -271,14 +316,41 @@ const loadTypes = async () => {
   const res = await request.get('/questionType/selectAll')
   if (res.code === '200') typeList.value = res.data || []
 }
-
 // 选择课程
 const selectCourse = (course) => {
   selectedCourse.value = course
   data.pageNum = 1
   searchName.value = ''
+  searchTypeId.value = null
+  searchDifficulty.value = null
+  searchKnowledgePoint.value = null
+  loadQuestions()
+  loadKnowledgePoints()
+}
+// 加载知识点列表（用于筛选下拉）
+const loadKnowledgePoints = async () => {
+  try {
+    const res = await request.get('/question/getKnowledgePoints',{
+    params: {courseId: selectedCourse.value.id}})
+    if (res.code === '200') {
+      knowledgePointList.value = res.data || []
+    }
+  } catch (e) {
+    // 如果接口不存在，知识点筛选将只支持手动输入
+  }
+}
+console.log(knowledgePointList.value)
+// 重置搜索
+const resetSearch = () => {
+  searchName.value = ''
+  searchTypeId.value = null
+  searchDifficulty.value = null
+  searchKnowledgePoint.value = null
+  data.pageNum = 1
   loadQuestions()
 }
+
+
 
 // 加载题目列表
 const loadQuestions = async () => {
@@ -290,7 +362,10 @@ const loadQuestions = async () => {
         pageNum: data.pageNum,
         pageSize: data.pageSize,
         name: searchName.value,
-        courseId: selectedCourse.value.id
+        courseId: selectedCourse.value.id,
+        typeId: searchTypeId.value,
+        difficulty: searchDifficulty.value,
+        knowledgePoints: searchKnowledgePoint.value
       }
     })
     if (res.code === '200') {
@@ -303,7 +378,6 @@ const loadQuestions = async () => {
     data.loading = false
   }
 }
-
 const handleAdd = () => {
   data.form = {
     id: null,
@@ -416,6 +490,7 @@ const removeOption = (index) => {
 
 loadCourses()
 loadTypes()
+loadKnowledgePoints()
 </script>
 
 <style scoped>

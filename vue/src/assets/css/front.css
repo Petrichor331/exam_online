@@ -71,6 +71,38 @@
     background: #0e0d0d !important;
 
 }
+
+/* 模拟练习菜单标题 */
+.menu-title {
+    color: #cccccc !important;
+}
+
+/* el-sub-menu 激活时的底边框 */
+.el-menu--horizontal .el-sub-menu.is-active {
+    border-bottom-color: #fdfdfd !important;
+}
+
+.el-menu--horizontal .el-sub-menu.is-active .el-sub-menu__title {
+    color: #fdfdfd !important;
+}
+
+/* 下拉子菜单样式 */
+.el-menu--horizontal .el-menu--popup {
+    background: #333 !important;
+    border: none !important;
+}
+.el-menu--horizontal .el-menu--popup .el-menu-item {
+    color: #0e0d0d !important;
+}
+.el-menu--horizontal .el-menu--popup .el-menu-item:hover {
+    background: #444 !important;
+    color: #fff !important;
+}
+.el-menu--horizontal .el-menu--popup .el-menu-item.is-active {
+    color: #fff !important;
+    background: #222 !important;
+}
+
 .el-tooltip__trigger {
     outline: none;
 }

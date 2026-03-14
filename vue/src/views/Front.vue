@@ -9,7 +9,13 @@
       <div class="front-header-center">
         <el-menu :default-active="router.currentRoute.value.path" router mode="horizontal">
           <el-menu-item index="/front/home">首页</el-menu-item>
-          <el-menu-item index="/front/practice">模拟练习</el-menu-item>
+          <el-sub-menu index="/front/practice">
+            <template #title>
+              <span class="menu-title">模拟练习</span>
+            </template>
+            <el-menu-item index="/front/practice">刷题中心</el-menu-item>
+            <el-menu-item index="/front/exam-practice">模拟考试</el-menu-item>
+          </el-sub-menu>
           <el-menu-item index="/front/course">课程中心</el-menu-item>
           <el-menu-item index="/front/myCourse">我的课程</el-menu-item>
           <el-menu-item index="/front/examList">考试列表</el-menu-item>
@@ -22,19 +28,12 @@
           <el-button @click="router.push('/login')" type="primary">登录</el-button>
           <el-button @click="router.push('/register')">注册</el-button>
         </div>
-        <div v-else>
-          <el-dropdown style="cursor: pointer; height: 60px">
-            <div style="display: flex; align-items: center; color: #fff;">
-              <img style="width: 40px; height: 40px; border-radius: 50%;" :src="data.user.avatar" alt="">
-              <span style="margin-left: 5px;">{{data.user.name}}</span><el-icon><arrow-down /></el-icon>
-            </div>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item @click="router.push('/front/password')">修改密码</el-dropdown-item>
-                <el-dropdown-item divided @click=logout>退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+        <div v-else style="display: flex; align-items: center; gap: 10px;">
+          <div style="cursor: pointer; height: 60px; display: flex; align-items: center;" @click="router.push('/front/person')">
+            <img style="width: 40px; height: 40px; border-radius: 50%;" :src="data.user.avatar" alt="">
+            <span style="margin-left: 5px; color: #fff;">{{data.user.name}}</span>
+          </div>
+          <el-button size="small" @click="logout">退出登录</el-button>
         </div>
       </div>
     </div>

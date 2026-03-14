@@ -1,0 +1,455 @@
+<template>
+  <div class="practice-exam-container" v-loading="loading">
+    <!-- 顶部进度条 -->
+    <div class="progress-bar">
+      <div class="progress-info">
+        <span class="course-name">{{ courseName }}</span>
+        <span class="progress-text">已做 {{ answeredCount }} / {{ questions.length }}</span>
+      </div>
+      <div class="progress-actions">
+        <el-button size="small" @click="resetPractice" :disabled="answeredCount === 0">重置</el-button>
+        <el-button size="small" @click="goBack">返回</el-button>
+      </div>
+    </div>
+
+    <!-- 筛选条件 -->
+    <div class="filter-bar" v-if="questions.length > 0">
+      <el-checkbox-group v-model="filterTypes" @change="applyFilter">
+        <el-checkbox :value="1">单选题</el-checkbox>
+        <el-checkbox :value="2">多选题</el-checkbox>
+        <el-checkbox :value="3">判断题</el-checkbox>
+        <el-checkbox :value="4">填空题</el-checkbox>
+        <el-checkbox :value="5">简答题</el-checkbox>
+      </el-checkbox-group>
+    </div>
+
+    <!-- 题目列表 -->
+    <div class="questions-container" v-if="filteredQuestions.length > 0">
+      <div 
+        v-for="(question, index) in filteredQuestions" 
+        :key="question.id"
+        class="question-card"
+        :class="{ answered: userAnswers[question.id] }"
+        :id="`question-${question.id}`"
+      >
+        <div class="question-header">
+          <div class="question-meta">
+            <el-tag :type="getTypeTag(question.typeId)" size="small">
+              {{ getTypeName(question.typeId) }}
+            </el-tag>
+            <span class="score">{{ question.score }}分</span>
+            <el-tag v-if="userAnswers[question.id]" :type="isCorrect(question.id) ? 'success' : 'danger'" size="small">
+              {{ isCorrect(question.id) ? '正确' : '错误' }}
+            </el-tag>
+          </div>
+          <span class="question-number">{{ index + 1 }}</span>
+        </div>
+
+        <div class="question-text">
+          {{ question.name }}
+        </div>
+
+        <!-- 单选题 -->
+        <div v-if="question.typeId === 1" class="options-area">
+          <el-radio-group 
+            v-model="userAnswers[question.id]" 
+            @change="(val) => submitSingleAnswer(question.id, val, question.referenceAnswer)"
+          >
+            <el-radio 
+              v-for="opt in question.options" 
+              :key="opt.id" 
+              :label="opt.optionLabel"
+              class="option-item"
+              :disabled="submittedAnswers[question.id]"
+            >
+              <span class="option-label">{{ opt.optionLabel }}.</span>
+              <span class="option-content">{{ opt.optionContent }}</span>
+            </el-radio>
+          </el-radio-group>
+        </div>
+
+        <!-- 多选题 -->
+        <div v-else-if="question.typeId === 2" class="options-area">
+          <el-checkbox-group 
+            v-model="multiAnswers[question.id]" 
+            @change="(val) => submitMultiAnswer(question.id, val, question.referenceAnswer)"
+          >
+            <el-checkbox 
+              v-for="opt in question.options" 
+              :key="opt.id" 
+              :label="opt.optionLabel"
+              class="option-item"
+              :disabled="submittedAnswers[question.id]"
+            >
+              <span class="option-label">{{ opt.optionLabel }}.</span>
+              <span class="option-content">{{ opt.optionContent }}</span>
+            </el-checkbox>
+          </el-checkbox-group>
+        </div>
+
+        <!-- 判断题 -->
+        <div v-else-if="question.typeId === 3" class="options-area">
+          <el-radio-group 
+            v-model="userAnswers[question.id]" 
+            @change="(val) => submitSingleAnswer(question.id, val, question.referenceAnswer)"
+          >
+            <el-radio label="正确" class="option-item" :disabled="submittedAnswers[question.id]">正确</el-radio>
+            <el-radio label="错误" class="option-item" :disabled="submittedAnswers[question.id]">错误</el-radio>
+          </el-radio-group>
+        </div>
+
+        <!-- 填空题/简答题 -->
+        <div v-else class="options-area">
+          <el-input
+            v-model="textAnswers[question.id]"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入答案"
+            :disabled="submittedAnswers[question.id]"
+          />
+          <el-button 
+            type="primary" 
+            size="small" 
+            style="margin-top: 10px"
+            @click="submitTextAnswer(question.id, question.referenceAnswer)"
+            :disabled="submittedAnswers[question.id] || !textAnswers[question.id]"
+          >
+            提交
+          </el-button>
+        </div>
+
+        <!-- 答题结果 -->
+        <div v-if="submittedAnswers[question.id]" class="answer-result">
+          <div class="result-row">
+            <span class="label">正确答案：</span>
+            <span class="value correct">{{ question.referenceAnswer || '无' }}</span>
+          </div>
+          <div class="result-row" v-if="question.typeId !== 4 && question.typeId !== 5">
+            <span class="label">你的答案：</span>
+            <span class="value" :class="isCorrect(question.id) ? 'correct' : 'wrong'">
+              {{ getUserAnswer(question.id) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <el-empty v-else-if="!loading" description="没有找到符合条件的题目"></el-empty>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import request from '@/utils/request.js'
+
+const router = useRouter()
+const route = useRoute()
+const loading = ref(false)
+
+const courseId = ref(route.params.courseId)
+const courseName = ref('')
+const questions = ref([])
+const allQuestions = ref([])
+
+const userAnswers = reactive({})
+const multiAnswers = reactive({})
+const textAnswers = reactive({})
+const submittedAnswers = reactive({})
+const answerResults = reactive({})
+
+const filterTypes = ref([])
+
+const filteredQuestions = computed(() => {
+  if (filterTypes.value.length === 0) {
+    return questions.value
+  }
+  return questions.value.filter(q => filterTypes.value.includes(q.typeId))
+})
+
+const answeredCount = computed(() => {
+  return Object.keys(submittedAnswers).length
+})
+
+const STORAGE_KEY = `practice_${courseId.value}`
+
+const getTypeTag = (typeId) => {
+  const tags = { 1: 'success', 2: 'success', 3: 'info', 4: 'warning', 5: 'danger' }
+  return tags[typeId] || 'info'
+}
+
+const getTypeName = (typeId) => {
+  const names = { 1: '单选题', 2: '多选题', 3: '判断题', 4: '填空题', 5: '简答题' }
+  return names[typeId] || '未知'
+}
+
+const isCorrect = (questionId) => {
+  return answerResults[questionId] === true
+}
+
+const getUserAnswer = (questionId) => {
+  const q = questions.value.find(q => q.id === questionId)
+  if (!q) return ''
+  
+  if (q.typeId === 2) {
+    return multiAnswers[questionId]?.join(',') || ''
+  }
+  return userAnswers[questionId] || ''
+}
+
+const submitSingleAnswer = (questionId, answer, correctAnswer) => {
+  submittedAnswers[questionId] = true
+  answerResults[questionId] = answer === correctAnswer
+  saveProgress()
+}
+
+const submitMultiAnswer = (questionId, answers, correctAnswer) => {
+  if (!answers || answers.length === 0) return
+  
+  const userAnswer = answers.join(',')
+  const correct = correctAnswer ? answers.sort().join(',') === correctAnswer.split(',').sort().join(',') : false
+  
+  submittedAnswers[questionId] = true
+  answerResults[questionId] = correct
+  saveProgress()
+}
+
+const submitTextAnswer = (questionId, correctAnswer) => {
+  submittedAnswers[questionId] = true
+  // 简答题和填空题暂时标记为正确（用户自查）
+  answerResults[questionId] = null
+  saveProgress()
+}
+
+const applyFilter = () => {
+  questions.value = allQuestions.value
+  if (filterTypes.value.length > 0) {
+    questions.value = allQuestions.value.filter(q => filterTypes.value.includes(q.typeId))
+  }
+}
+
+const loadQuestions = async () => {
+  loading.value = true
+  try {
+    const res = await request.get('/question/list', {
+      params: { courseId: courseId.value }
+    })
+    
+    if (res.code === '200') {
+      allQuestions.value = res.data || []
+      questions.value = [...allQuestions.value]
+      courseName.value = allQuestions.value[0]?.courseName || '刷题练习'
+      
+      // 加载保存的进度
+      loadProgress()
+    }
+  } catch (error) {
+    console.error('加载题目失败:', error)
+    ElMessage.error('加载题目失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const saveProgress = () => {
+  const progress = {
+    userAnswers: { ...userAnswers },
+    multiAnswers: { ...multiAnswers },
+    textAnswers: { ...textAnswers },
+    submittedAnswers: { ...submittedAnswers },
+    answerResults: { ...answerResults }
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
+}
+
+const loadProgress = () => {
+  const saved = localStorage.getItem(STORAGE_KEY)
+  if (saved) {
+    try {
+      const progress = JSON.parse(saved)
+      Object.assign(userAnswers, progress.userAnswers || {})
+      Object.assign(multiAnswers, progress.multiAnswers || {})
+      Object.assign(textAnswers, progress.textAnswers || {})
+      Object.assign(submittedAnswers, progress.submittedAnswers || {})
+      Object.assign(answerResults, progress.answerResults || {})
+    } catch (e) {
+      console.error('加载进度失败:', e)
+    }
+  }
+}
+
+const resetPractice = () => {
+  localStorage.removeItem(STORAGE_KEY)
+  Object.keys(userAnswers).forEach(k => delete userAnswers[k])
+  Object.keys(multiAnswers).forEach(k => delete multiAnswers[k])
+  Object.keys(textAnswers).forEach(k => delete textAnswers[k])
+  Object.keys(submittedAnswers).forEach(k => delete submittedAnswers[k])
+  Object.keys(answerResults).forEach(k => delete answerResults[k])
+  ElMessage.success('已重置')
+}
+
+const goBack = () => {
+  router.push('/front/practice')
+}
+
+onMounted(() => {
+  loadQuestions()
+})
+</script>
+
+<style scoped>
+.practice-exam-container {
+  min-height: 100vh;
+  background: #f5f7fa;
+  padding-bottom: 40px;
+}
+
+.progress-bar {
+  background: #fff;
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.progress-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.course-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.progress-text {
+  font-size: 16px;
+  color: #409eff;
+  font-weight: bold;
+}
+
+.progress-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-bar {
+  background: #fff;
+  padding: 15px 30px;
+  margin-bottom: 20px;
+}
+
+.questions-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.question-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+}
+
+.question-card.answered {
+  border-left: 4px solid #409eff;
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.question-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.score {
+  color: #f56c6c;
+  font-weight: bold;
+}
+
+.question-number {
+  font-size: 18px;
+  font-weight: bold;
+  color: #909399;
+}
+
+.question-text {
+  font-size: 16px;
+  line-height: 1.8;
+  margin-bottom: 20px;
+  color: #303133;
+}
+
+.options-area {
+  margin-bottom: 15px;
+}
+
+.option-item {
+  display: block;
+  padding: 12px 15px;
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  transition: all 0.3s;
+}
+
+.option-item:hover:not(.is-disabled) {
+  border-color: #409eff;
+}
+
+.option-item.is-disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.option-label {
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.answer-result {
+  margin-top: 15px;
+  padding: 15px;
+  background: #f5f7fa;
+  border-radius: 6px;
+}
+
+.result-row {
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.result-row:last-child {
+  margin-bottom: 0;
+}
+
+.result-row .label {
+  width: 80px;
+  color: #909399;
+}
+
+.result-row .value.correct {
+  color: #67c23a;
+  font-weight: bold;
+}
+
+.result-row .value.wrong {
+  color: #f56c6c;
+  font-weight: bold;
+}
+</style>

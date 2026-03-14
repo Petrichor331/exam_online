@@ -4,11 +4,13 @@ package com.example.controller;
 import com.example.common.Result;
 import com.example.entity.Admin;
 import com.example.service.AdminService;
+import com.example.service.UserDisableService;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/admin")
@@ -16,6 +18,46 @@ public class AdminController {
 
     @Resource
     private AdminService adminService;
+    @Resource
+    private UserDisableService userDisableService;
+    
+    /**
+     * 禁用用户
+     *
+     */
+    @PostMapping("/disable")
+    public Result disableUser(@RequestBody Map<String, Object> params) {
+        String role = (String) params.get("role");
+        Integer userId = (Integer) params.get("userId");
+        Integer days = (Integer) params.get("days");
+        
+        if (role == null || userId == null) {
+            return Result.error("参数错误");
+        }
+        
+        userDisableService.disableUser(role, userId, days != null ? days : 0);
+        return Result.success("禁用成功");
+    }
+    
+    /**
+     * 解除禁用
+     */
+    @PostMapping("/enable")
+    public Result enableUser(@RequestBody Map<String, Object> params) {
+        String role = (String) params.get("role");
+        Integer userId = (Integer) params.get("userId");
+        
+        if (role == null || userId == null) {
+            return Result.error("参数错误");
+        }
+        
+        userEnable(role, userId);
+        return Result.success("解除成功");
+    }
+    
+    private void userEnable(String role, Integer userId) {
+        userDisableService.enableUser(role, userId);
+    }
     @PostMapping("/add")
     public Result add(@RequestBody Admin admin){
         adminService.add(admin);

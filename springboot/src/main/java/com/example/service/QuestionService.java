@@ -7,10 +7,13 @@ import com.example.common.dto.QuestionAddDTO;
 import com.example.common.dto.QuestionOptionDTO;
 import com.example.common.enums.ResultCodeEnum;
 import com.example.common.enums.RoleEnum;
+import com.example.common.vo.ExamQuestionVO;
 import com.example.common.vo.QuestionListVO;
 import com.example.entity.Account;
+import com.example.entity.Course;
 import com.example.entity.Question;
 import com.example.exception.CustomException;
+import com.example.mapper.CourseMapper;
 import com.example.mapper.QuestionMapper;
 import com.example.mapper.QuestionOptionMapper;
 import com.example.entity.QuestionOption;
@@ -21,8 +24,11 @@ import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class QuestionService {
@@ -30,6 +36,8 @@ public class QuestionService {
     private QuestionMapper questionMapper;
     @Resource
     private QuestionOptionMapper questionOptionMapper;
+    @Resource
+    private CourseMapper courseMapper;
 
     public void add(Question question) {
         questionMapper.insert(question);
@@ -79,9 +87,9 @@ public class QuestionService {
             questionOptionMapper.insertBatch(questionOptions);
         }
     }
-    public PageInfo<QuestionListVO> selectPage(Integer pageNum, Integer pageSize,String name,Integer courseId,Integer typeId) {
+    public PageInfo<QuestionListVO> selectPage(Integer pageNum, Integer pageSize,String name,Integer courseId,Integer typeId,Integer difficulty, List<String> knowledgePoints) {
         PageHelper.startPage(pageNum, pageSize);
-        List<QuestionListVO> list = questionMapper.selectPage(name,courseId,typeId);
+        List<QuestionListVO> list = questionMapper.selectPage(name,courseId,typeId,difficulty, knowledgePoints);
         return PageInfo.of(list);
     }
 
@@ -163,5 +171,69 @@ public class QuestionService {
 
     public List<String> selectKnowledgePoints(Integer courseId) {
         return questionMapper.selectKnowledgePoints(courseId);
+    }
+
+    public List<ExamQuestionVO> getRandomQuestions(Integer courseId, List<Integer> typeIds, 
+                                                     List<String> knowledgePoints, Integer difficulty, Integer count) {
+        List<Question> questions = questionMapper.selectRandomQuestions(courseId, typeIds, knowledgePoints, difficulty, count);
+        
+        List<ExamQuestionVO> result = new ArrayList<>();
+        for (Question q : questions) {
+            ExamQuestionVO vo = new ExamQuestionVO();
+            vo.setId(q.getId());
+            vo.setName(q.getName());
+            vo.setTypeId(q.getTypeId());
+            vo.setScore(q.getScore());
+            vo.setReferenceAnswer(q.getReferenceAnswer());
+            
+            List<QuestionOption> options = questionOptionMapper.selectByQuestionId(q.getId());
+            List<QuestionOptionDTO> optionDTOs = options.stream().map(o -> {
+                QuestionOptionDTO dto = new QuestionOptionDTO();
+                dto.setId(o.getId());
+                dto.setOptionLabel(o.getOptionLabel());
+                dto.setOptionContent(o.getOptionContent());
+                return dto;
+            }).collect(Collectors.toList());
+            vo.setOptions(optionDTOs);
+            result.add(vo);
+        }
+        return result;
+    }
+
+    public List<ExamQuestionVO> getQuestionsByCourse(Integer courseId, List<Integer> typeIds, 
+                                                      List<String> knowledgePoints, Integer difficulty) {
+        List<Question> questions = questionMapper.selectByCourseIdWithFilter(courseId, typeIds, knowledgePoints, difficulty);
+        
+        Course course = null;
+        try {
+            course = courseMapper.selectById(courseId);
+        } catch (Exception e) {
+            // ignore
+        }
+        
+        List<ExamQuestionVO> result = new ArrayList<>();
+        for (Question q : questions) {
+            ExamQuestionVO vo = new ExamQuestionVO();
+            vo.setId(q.getId());
+            vo.setName(q.getName());
+            vo.setTypeId(q.getTypeId());
+            vo.setScore(q.getScore());
+            vo.setReferenceAnswer(q.getReferenceAnswer());
+            if (course != null) {
+                vo.setCourseName(course.getName());
+            }
+            
+            List<QuestionOption> options = questionOptionMapper.selectByQuestionId(q.getId());
+            List<QuestionOptionDTO> optionDTOs = options.stream().map(o -> {
+                QuestionOptionDTO dto = new QuestionOptionDTO();
+                dto.setId(o.getId());
+                dto.setOptionLabel(o.getOptionLabel());
+                dto.setOptionContent(o.getOptionContent());
+                return dto;
+            }).collect(Collectors.toList());
+            vo.setOptions(optionDTOs);
+            result.add(vo);
+        }
+        return result;
     }
 }

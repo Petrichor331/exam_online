@@ -22,6 +22,8 @@ import java.util.List;
 public class StudentService {
     @Resource
     private StudentMapper studentMapper;
+    @Resource
+    private UserDisableService userDisableService;
     //对应后台管理那个页面里面的新增学生，跟注册不一样
     public void add(Student student){
         Student dbStudent = studentMapper.selectByUsername(student.getUsername());
@@ -35,7 +37,7 @@ public class StudentService {
             student.setName(student.getUsername());
         }
         student.setRole(RoleEnum.STUDENT.name());
-        student.setStatus("审核通过");
+        student.setStatus("正常");
         studentMapper.insert(student);
     }
 
@@ -73,8 +75,14 @@ public class StudentService {
         if(!dbStudent.getPassword().equals(account.getPassword())){
             throw new CustomException(ResultCodeEnum.USER_ACCOUNT_OR_PASSWORD_ERROR);
         }
-        if(!dbStudent.getStatus().equals("审核通过")){
-            throw new CustomException(ResultCodeEnum.USER_NOT_PASS_ERROR);
+        if(!dbStudent.getStatus().equals("正常")){
+            throw new CustomException("账号状态异常，请联系管理员");
+        }
+        
+        // 检查Redis是否被禁用/禁言
+        String disableInfo = userDisableService.checkUserStatus("student", dbStudent.getId());
+        if (disableInfo != null) {
+            throw new CustomException(disableInfo);
         }
 
         String token = TokenUtils.createToken(dbStudent.getId()+"-"+dbStudent.getRole(), dbStudent.getPassword());

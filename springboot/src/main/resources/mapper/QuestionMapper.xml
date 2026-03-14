@@ -44,7 +44,15 @@
             <if test="typeId != null">
                 AND q.type_id = #{typeId}
             </if>
-
+            <if test="difficulty != null">
+                AND q.difficulty = #{difficulty}
+            </if>
+            <if test="knowledgePoints != null and knowledgePoints.size()>0">
+                AND q.knowledge_point IN
+                <foreach collection="knowledgePoints" item="kp" open="(" separator="," close=")">
+                    #{kp}
+                </foreach>
+            </if>
 
         </where>
 
@@ -108,5 +116,60 @@
         </set>
         where id = #{id}
     </update>
+
+    <!-- 随机抽题 -->
+    <select id="selectRandomQuestions" resultType="com.example.entity.Question">
+        SELECT * FROM question
+        <where>
+            <if test="courseId != null">
+                course_id = #{courseId}
+            </if>
+            <if test="typeIds != null and typeIds.size() > 0">
+                AND type_id IN
+                <foreach collection="typeIds" item="typeId" open="(" separator="," close=")">
+                    #{typeId}
+                </foreach>
+            </if>
+            <if test="knowledgePoints != null and knowledgePoints.size() > 0">
+                AND knowledge_point IN
+                <foreach collection="knowledgePoints" item="kp" open="(" separator="," close=")">
+                    #{kp}
+                </foreach>
+            </if>
+            <if test="difficulty != null">
+                AND difficulty = #{difficulty}
+            </if>
+        </where>
+        ORDER BY RAND()
+        <if test="count != null">
+            LIMIT #{count}
+        </if>
+    </select>
+
+    <!-- 获取课程所有题目（支持筛选） -->
+    <select id="selectByCourseIdWithFilter" resultType="com.example.entity.Question">
+        SELECT * FROM question
+        <where>
+            <if test="courseId != null">
+                course_id = #{courseId}
+            </if>
+            <if test="typeIds != null and typeIds.size() > 0">
+                AND type_id IN
+                <foreach collection="typeIds" item="typeId" open="(" separator="," close=")">
+                    #{typeId}
+                </foreach>
+            </if>
+            <if test="knowledgePoints != null and knowledgePoints.size() > 0">
+                AND knowledge_point IN
+                <foreach collection="knowledgePoints" item="kp" open="(" separator="," close=")">
+                    #{kp}
+                </foreach>
+            </if>
+            <if test="difficulty != null and difficulty > 0">
+                AND difficulty = #{difficulty}
+            </if>
+        </where>
+        ORDER BY type_id, id
+    </select>
 
 </mapper>

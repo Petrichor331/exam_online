@@ -22,6 +22,8 @@ import java.util.List;
 public class TeacherService {
     @Resource
     private TeacherMapper teacherMapper;
+    @Resource
+    private UserDisableService userDisableService;
 
     public void add(Teacher teacher){
         Teacher dbTeacher = teacherMapper.selectByUsername(teacher.getUsername());
@@ -35,6 +37,7 @@ public class TeacherService {
             teacher.setName(teacher.getUsername());
         }
         teacher.setRole(RoleEnum.TEACHER.name());
+        teacher.setStatus("正常");
         teacherMapper.insert(teacher);
     }
 
@@ -72,7 +75,16 @@ public class TeacherService {
         if(!dbTeacher.getPassword().equals(account.getPassword())){
             throw new CustomException(ResultCodeEnum.USER_ACCOUNT_OR_PASSWORD_ERROR);
         }
-        //TODO token
+        if(dbTeacher.getStatus() != null && !dbTeacher.getStatus().equals("正常")){
+            throw new CustomException("账号状态异常，请联系管理员");
+        }
+        
+        // 检查Redis是否被禁用/禁言
+        String disableInfo = userDisableService.checkUserStatus("teacher", dbTeacher.getId());
+        if (disableInfo != null) {
+            throw new CustomException(disableInfo);
+        }
+        
         String token = TokenUtils.createToken(dbTeacher.getId()+"-"+dbTeacher.getRole(), dbTeacher.getPassword());
         dbTeacher.setToken(token);
         return dbTeacher;

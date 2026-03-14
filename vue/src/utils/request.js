@@ -13,6 +13,11 @@ const request = axios.create({
 request.interceptors.request.use(config => {
     config.headers['Content-Type'] = 'application/json;charset=utf-8';
 
+    // 登录接口和验证码接口不需要token
+    if (config.url.includes('/login') || config.url.includes('/captcha')) {
+        return config
+    }
+
     // 使用新的工具函数获取当前用户
     const user = getCurrentUser()
     if (user && user.token) {

@@ -24,9 +24,17 @@
         <el-table-column prop="role" label="角色" />
         <el-table-column prop="phone" label="电话" />
         <el-table-column prop="email" label="邮箱" />
-        <el-table-column label="操作" width="100" fixed="right">
+        <el-table-column prop="status" label="状态" >
+          <template v-slot="scope">
+            <el-tag v-if="scope.row.status === '正常'" type="success">{{scope.row.status}}</el-tag>
+            <el-tag v-else type="warning">{{scope.row.status}}</el-tag>
+
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="200" fixed="right">
           <template v-slot="scope">
             <el-button type="primary" circle :icon="Edit" @click="handleEdit(scope.row)"></el-button>
+            <el-button type="warning" circle :icon="Lock" @click="openDisableDialog(scope.row)" title="禁言"></el-button>
             <el-button type="danger" circle :icon="Delete" @click="handleDelete(scope.row.id)"></el-button>
           </template>
         </el-table-column>
@@ -45,8 +53,8 @@
     </div>
 
     <el-dialog title="教师信息" v-model="data.formVisible" width="40%" destroy-on-close>
-      <el-form ref="form" :model="data.form" label-width="70px" style="padding: 20px">
-        <el-form-item prop="username" label="用户名">
+      <el-form ref="form" :model="data.form" label-width="70px" style="padding: 20px" :rules="rules">
+        <el-form-item prop="username" label="用户名" >
           <el-input v-model="data.form.username" placeholder="请输入用户名"></el-input>
         </el-form-item>
         <el-form-item prop="avatar" label="头像">
@@ -60,6 +68,9 @@
         </el-form-item>
         <el-form-item prop="name" label="姓名">
           <el-input v-model="data.form.name" placeholder="请输入姓名"></el-input>
+        </el-form-item>
+        <el-form-item prop="password" label="密码">
+          <el-input v-model="data.form.password" placeholder="请输入密码"></el-input>
         </el-form-item>
         <el-form-item prop="phone" label="电话">
           <el-input v-model="data.form.phone" placeholder="请输入电话"></el-input>
@@ -75,6 +86,26 @@
     </span>
       </template>
     </el-dialog>
+
+    <!-- 禁用对话框 -->
+    <el-dialog title="账户禁用" v-model="data.disableVisible" width="400px" destroy-on-close>
+      <el-form label-width="80px">
+        <el-form-item label="禁用时长">
+          <el-select v-model="data.disableDays" placeholder="请选择禁用时长" style="width: 100%">
+            <el-option :value="1" label="1天"></el-option>
+            <el-option :value="3" label="3天"></el-option>
+            <el-option :value="7" label="7天"></el-option>
+            <el-option :value="30" label="30天"></el-option>
+            <el-option :value="0" label="永久禁用"></el-option>
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="data.disableVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmDisable">确定禁用</el-button>
+        <el-button type="success" @click="enableUser">解除</el-button>
+      </template>
+    </el-dialog>
   </div>
 
 
@@ -86,7 +117,7 @@
 import {reactive} from "vue";
 import request from "@/utils/request.js";
 import {ElMessage, ElMessageBox} from "element-plus";
-import {Delete, Edit} from "@element-plus/icons-vue";
+import {Delete, Edit, Lock} from "@element-plus/icons-vue";
 
 const baseUrl = import.meta.env.VITE_BASE_URL
 
@@ -99,7 +130,23 @@ const data = reactive({
   total: 0,
   query: '',
   ids: [],
+  disableVisible: false,
+  disableDays: 7,
+  currentUser: null,
 })
+
+const rules = {
+  username:[{
+    required:true,
+    message:'用户名不能为空哦~',
+    trigger:'blur'
+  }],
+  password:[{
+    required:true,
+    message:'密码不能为空哦~',
+    trigger:'blur'
+  }]
+}
 
 const load = () =>{
   request.get('/teacher/selectPage', {
@@ -199,6 +246,41 @@ const save = () => {
 const reset = () => {
   data.query = null
       load()
+}
+
+const openDisableDialog = (row) => {
+  data.currentUser = { id: row.id, role: 'teacher' }
+  data.disableDays = 7
+  data.disableVisible = true
+}
+
+const confirmDisable = () => {
+  request.post('/admin/disable', {
+    role: data.currentUser.role,
+    userId: data.currentUser.id,
+    days: data.disableDays
+  }).then(res => {
+    if (res.code === '200') {
+      ElMessage.success('禁用成功')
+      data.disableVisible = false
+    } else {
+      ElMessage.error(res.msg)
+    }
+  })
+}
+
+const enableUser = () => {
+  request.post('/admin/enable', {
+    role: data.currentUser.role,
+    userId: data.currentUser.id
+  }).then(res => {
+    if (res.code === '200') {
+      ElMessage.success('已解除')
+      data.disableVisible = false
+    } else {
+      ElMessage.error(res.msg)
+    }
+  })
 }
 
 load()

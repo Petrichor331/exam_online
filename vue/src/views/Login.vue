@@ -50,6 +50,20 @@
             </el-select>
           </el-form-item>
           
+          <el-form-item prop="captcha">
+            <div class="captcha-wrapper">
+              <el-input 
+                v-model="data.form.captchaCode" 
+                placeholder="请输入验证码"
+                size="large"
+                style="flex: 1"
+              />
+              <div class="captcha-code" @click="refreshCaptcha" title="点击刷新">
+                {{ data.captchaCode }}
+              </div>
+            </div>
+          </el-form-item>
+          
           <el-form-item>
             <el-button type="primary" size="large" style="width: 100%" @click="login">
               登 录
@@ -72,7 +86,7 @@ import { Lock, User, School } from "@element-plus/icons-vue"
 import request from "@/utils/request.js"
 import { ElMessage } from "element-plus"
 import { useRouter } from 'vue-router'
-import { getCurrentUser, setCurrentUser } from '@/utils/userStorage.js'
+import { getCurrentUser, setCurrentUser, clearCurrentUser } from '@/utils/userStorage.js'
 
 const router = useRouter()
 
@@ -81,28 +95,37 @@ const data = reactive({
   rules: {
     username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
     password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
-  }
+  },
+  captchaCode: '',
+  captchaId: ''
 })
 
 const formRef = ref()
 
-onMounted(() => {
-  const user = getCurrentUser()
-  if (user && user.id) {
-    if (user.role === 'STUDENT') {
-      router.push('/front/home')
-    } else if (user.role === 'TEACHER') {
-      router.push('/teacher/home')
-    } else if (user.role === 'ADMIN') {
-      router.push('/manager/home')
+const refreshCaptcha = () => {
+  request.get('/captcha').then(res => {
+    console.log('验证码响应:', res)
+    if (res.code === '200') {
+      const parts = res.data.split(',')
+      data.captchaId = parts[0]
+      data.captchaCode = parts[1]
+      console.log(data.captchaId)
+      console.log(data.captchaCode)
+
     }
-  }
-})
+  }).catch(err => {
+    console.error('获取验证码失败:', err)
+  })
+}
 
 const login = () => {
   formRef.value.validate(valid => {
     if (valid) {
-      request.post('/login', data.form).then(res => {
+      request.post('/login', {
+        ...data.form,
+        captchaId: data.captchaId,
+        captchaCode: data.form.captchaCode
+      }).then(res => {
         if (res.code === '200') {
           ElMessage.success('登录成功')
           setCurrentUser(res.data)
@@ -115,11 +138,32 @@ const login = () => {
           }
         } else {
           ElMessage.error(res.msg)
+          refreshCaptcha()
         }
       })
     }
   })
 }
+
+onMounted(() => {
+  // 清除可能存在的无效token
+  const user = getCurrentUser()
+  if (user && user.token) {
+    // 检查token是否有效，无效则清除
+    if (!user.token || user.token === 'null' || user.token === 'undefined') {
+      clearCurrentUser()
+    } else {
+      if (user.role === 'STUDENT') {
+        router.push('/front/home')
+      } else if (user.role === 'TEACHER') {
+        router.push('/teacher/home')
+      } else if (user.role === 'ADMIN') {
+        router.push('/manager/home')
+      }
+    }
+  }
+  refreshCaptcha()
+})
 </script>
 
 <style scoped>
@@ -275,5 +319,34 @@ const login = () => {
   .login-right {
     width: 100%;
   }
+}
+
+.captcha-wrapper {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.captcha-code {
+  width: 100px;
+  height: 40px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  letter-spacing: 8px;
+  color: #333;
+  cursor: pointer;
+  user-select: none;
+}
+
+.captcha-image {
+  width: 120px;
+  height: 40px;
+  cursor: pointer;
+  border-radius: 4px;
 }
 </style>

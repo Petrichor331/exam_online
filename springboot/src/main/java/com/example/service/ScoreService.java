@@ -384,6 +384,19 @@ public class ScoreService {
         List<Score> scores = scoreMapper.selectByStudentId(studentId);
         List<ScoreListVO> scoreListVOS = new ArrayList<>();
         for (Score score : scores) {
+            //查试卷信息
+            TestPaper testPaper = testPaperMapper.selectById(score.getPaperId());
+            
+            // 试卷已删除则跳过
+            if (testPaper == null) {
+                continue;
+            }
+            
+            //排除模拟练习
+            if ("practice".equals(testPaper.getType())) {
+                continue;
+            }
+            
             ScoreListVO scoreListVO = new ScoreListVO();
             scoreListVO.setScoreId(score.getId());
             scoreListVO.setStudentId(score.getStudentId());
@@ -391,16 +404,82 @@ public class ScoreService {
             scoreListVO.setTotalScore(score.getTotalScore());
             scoreListVO.setStatus(score.getStatus());
             scoreListVO.setSubmitTime(score.getSubmitTime());
-            //查试卷名称
-            TestPaper testPaper = testPaperMapper.selectById(score.getPaperId());
-            if(testPaper!=null){
-                scoreListVO.setPaperName(testPaper.getName());
-            }else{
-                scoreListVO.setPaperName("试卷已删除");
+            scoreListVO.setPaperName(testPaper.getName());
+            scoreListVO.setCourseId(testPaper.getCourseId());
+            //查课程名称
+            Course course = courseMapper.selectById(testPaper.getCourseId());
+            if (course != null) {
+                scoreListVO.setCourseName(course.getName());
             }
             scoreListVOS.add(scoreListVO);
-
         }
         return scoreListVOS;
+    }
+
+    /**
+     * 获取学生知识点掌握情况（只统计客观题：单选、多选、判断）
+     */
+    public List<Map<String, Object>> getKnowledgePointStats(Integer studentId, Integer courseId) {
+        List<Score> scores = scoreMapper.selectByStudentId(studentId);
+        Map<String, int[]> knowledgeStats = new HashMap<>();
+        
+        for (Score score : scores) {
+            if (score.getStatus() == null || !"finished".equals(score.getStatus())) {
+                continue;
+            }
+            
+            TestPaper paper = testPaperMapper.selectById(score.getPaperId());
+            //排除模拟练习
+            if (paper == null || paper.getQuestionIds() == null || "practice".equals(paper.getType())) {
+                continue;
+            }
+            
+            // 按课程筛选
+            if (courseId != null && !courseId.equals(paper.getCourseId())) {
+                continue;
+            }
+            
+            String[] questionIds = paper.getQuestionIds().split(",");
+            for (String qId : questionIds) {
+                try {
+                    Question question = questionMapper.selectById(Integer.parseInt(qId.trim()));
+                    if (question == null || question.getKnowledgePoint() == null) {
+                        continue;
+                    }
+                    
+                    // 只统计客观题：1-单选，2-多选，3-判断
+                    if (question.getTypeId() == null || question.getTypeId() > 3) {
+                        continue;
+                    }
+                    
+                    String knowledgePoint = question.getKnowledgePoint();
+                    knowledgeStats.putIfAbsent(knowledgePoint, new int[2]);
+                    
+                    StudentAnswer answer = studentAnswerMapper.selectByStudentAndPaperAndQuestion(
+                        studentId, score.getPaperId(), question.getId());
+                    
+                    knowledgeStats.get(knowledgePoint)[0]++;
+                    if (answer != null && answer.getFinalScore() != null && answer.getFinalScore() > 0) {
+                        knowledgeStats.get(knowledgePoint)[1]++;
+                    }
+                } catch (Exception e) {
+                    // skip invalid question
+                }
+            }
+        }
+        
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map.Entry<String, int[]> entry : knowledgeStats.entrySet()) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("name", entry.getKey());
+            item.put("total", entry.getValue()[0]);
+            item.put("correct", entry.getValue()[1]);
+            item.put("rate", entry.getValue()[0] > 0 ? 
+                Math.round(entry.getValue()[1] * 100.0 / entry.getValue()[0]) : 0);
+            result.add(item);
+        }
+        
+        result.sort((a, b) -> Integer.compare((Integer)b.get("total"), (Integer)a.get("total")));
+        return result;
     }
 }

@@ -376,13 +376,15 @@ public class ExamService {
             
             // 查询试卷信息
             TestPaper paper = testPaperMapper.selectById(score.getPaperId());
-            if (paper != null) {
-                // 过滤掉模拟练习
-                if ("practice".equals(paper.getType())) {
-                    return null;
-                }
-                vo.setExamName(paper.getName());
+            if (paper == null) {
+                return null;  // 试卷已删除，跳过
             }
+            
+            // 过滤掉模拟练习
+            if ("practice".equals(paper.getType())) {
+                return null;
+            }
+            vo.setExamName(paper.getName());
             
             // 设置状态
             vo.setStatus(score.getStatus());
@@ -734,6 +736,9 @@ public class ExamService {
         
         // 获取试卷信息
         TestPaper paper = testPaperMapper.selectById(score.getPaperId());
+        if (paper == null) {
+            throw new RuntimeException("试卷不存在");
+        }
         
         // 构建考试信息
         Map<String, Object> examInfo = new HashMap<>();

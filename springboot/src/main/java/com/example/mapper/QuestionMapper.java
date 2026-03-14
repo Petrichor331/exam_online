@@ -20,7 +20,11 @@ public interface QuestionMapper {
     @Select("select * from `question` where id=#{id}")
     Question selectById(Integer id);
 
-    List<QuestionListVO> selectPage(@Param("name") String name,@Param("courseId") Integer courseId,@Param("typeId") Integer typeId);
+    List<QuestionListVO> selectPage(@Param("name") String name,
+                                    @Param("courseId") Integer courseId,
+                                    @Param("typeId") Integer typeId,
+                                    @Param("difficulty") Integer difficulty,
+                                    @Param("knowledgePoints") List<String> knowledgePoints);
 
     @Select("select id from question where course_id=#{courseId}")
     List<Integer> selectIdsByCourseId(Integer courseId);
@@ -30,4 +34,15 @@ public interface QuestionMapper {
 
     @Select("select * from question where course_id=#{courseId}")
     List<Question> selectByCourseId(Integer courseId);
+
+    List<Question> selectRandomQuestions(@Param("courseId") Integer courseId,
+                                         @Param("typeIds") List<Integer> typeIds,
+                                         @Param("knowledgePoints") List<String> knowledgePoints,
+                                         @Param("difficulty") Integer difficulty,
+                                         @Param("count") Integer count);
+
+    List<Question> selectByCourseIdWithFilter(@Param("courseId") Integer courseId,
+                                               @Param("typeIds") List<Integer> typeIds,
+                                               @Param("knowledgePoints") List<String> knowledgePoints,
+                                               @Param("difficulty") Integer difficulty);
 }

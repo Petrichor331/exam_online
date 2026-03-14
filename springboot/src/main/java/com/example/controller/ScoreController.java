@@ -174,4 +174,18 @@ public class ScoreController {
             return Result.error("500", "获取成绩失败: " + e.getMessage());
         }
     }
+
+    /**
+     * 获取学生知识点掌握情况
+     */
+    @GetMapping("/knowledge-stats")
+    public Result knowledgeStats(@RequestParam Integer studentId, @RequestParam(required = false) Integer courseId) {
+        try {
+            List<Map<String, Object>> stats = scoreService.getKnowledgePointStats(studentId, courseId);
+            return Result.success(stats);
+        } catch (Exception e) {
+            log.error("获取知识点统计失败, studentId: {}", studentId, e);
+            return Result.error("500", "获取知识点统计失败: " + e.getMessage());
+        }
+    }
 }

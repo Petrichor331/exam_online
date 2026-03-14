@@ -22,6 +22,7 @@
             <if test="email != null">email,</if>
             <if test="avatar != null">avatar,</if>
             <if test="role != null">role,</if>
+            <if test="status != null">status,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
             <if test="id != null">#{id},</if>
@@ -32,6 +33,7 @@
             <if test="email != null">#{email},</if>
             <if test="avatar != null">#{avatar},</if>
             <if test="role != null">#{role},</if>
+            <if test="status != null">#{status},</if>
         </trim>
     </insert>
 
@@ -49,6 +51,7 @@
             <if test="email != null">email = #{email},</if>
             <if test="avatar != null">avatar = #{avatar},</if>
             <if test="role != null">role = #{role},</if>
+            <if test="status != null">status = #{status},</if>
         </set>
         where id = #{id}
     </update>

@@ -45,7 +45,7 @@
     </div>
 
     <el-dialog title="管理员信息" v-model="data.formVisible" width="40%" destroy-on-close>
-      <el-form ref="form" :model="data.form" label-width="70px" style="padding: 20px">
+      <el-form ref="form" :model="data.form" label-width="70px" style="padding: 20px" :rules="rules">
         <el-form-item prop="username" label="用户名">
           <el-input v-model="data.form.username" placeholder="请输入用户名"></el-input>
         </el-form-item>
@@ -60,6 +60,9 @@
         </el-form-item>
         <el-form-item prop="name" label="姓名">
           <el-input v-model="data.form.name" placeholder="请输入姓名"></el-input>
+        </el-form-item>
+        <el-form-item prop="password" label="密码">
+          <el-input v-model="data.form.password" placeholder="请输入密码"></el-input>
         </el-form-item>
         <el-form-item prop="phone" label="电话">
           <el-input v-model="data.form.phone" placeholder="请输入电话"></el-input>
@@ -100,6 +103,19 @@ const data = reactive({
   query: '',
   ids: [],
 })
+
+const rules = {
+  username:[{
+    required:true,
+    message:'用户名不能为空哦~',
+    trigger:'blur'
+  }],
+  password:[{
+    required:true,
+    message:'密码不能为空哦~',
+    trigger:'blur'
+  }]
+}
 
 const load = () =>{
   request.get('/admin/selectPage', {

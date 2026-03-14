@@ -12,6 +12,8 @@ public class ExamQuestionVO {
     private Integer typeId;//题型id
     private String typeName;//题型名称
     private Integer score;//分值
+    private String referenceAnswer;//参考答案
+    private String courseName;//课程名称
     private List<QuestionOptionDTO> options;
 
     public Integer getId() {
