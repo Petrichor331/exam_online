@@ -20,6 +20,28 @@
       </div>
     </div>
 
+    <!-- 考试通知 -->
+    <div v-if="examPlans.length > 0" class="section notice-section">
+      <div class="section-header">
+        <div class="section-title">
+          <el-icon class="notice-icon"><Bell /></el-icon>
+          <span>考试通知</span>
+        </div>
+      </div>
+      <div class="notice-list">
+        <div v-for="plan in examPlans" :key="plan.id" class="notice-item">
+          <div class="notice-badge">
+            <el-icon><Bell /></el-icon>
+          </div>
+          <div class="notice-content">
+            <div class="notice-title">{{ plan.title }}</div>
+            <div class="notice-desc">{{ plan.content }}</div>
+            <div class="notice-time">{{ plan.time }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 进行中的考试 -->
     <div v-if="validOngoingExams.length > 0" class="section ongoing-section">
       <div class="section-header">
@@ -179,7 +201,7 @@ import { ElMessage } from 'element-plus'
 import {
   Timer, Document, Star, User, ArrowRight,
   Collection, EditPen, CircleClose, TrendCharts,
-  Calendar, Clock, Trophy, Lightning, Reading
+  Calendar, Clock, Trophy, Lightning, Reading, Bell
 } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -203,15 +225,17 @@ const currentDate = computed(() => {
 })
 
 // 数据
-const ongoingExams = ref([])
-const upcomingExams = ref([])
-const recentScores = ref([])
-const loading = ref(false)
+  const ongoingExams = ref([])
+  const upcomingExams = ref([])
+  const recentScores = ref([])
+  const examPlans = ref([])
+  const loading = ref(false)
 
 // 加载首页数据
 const loadHomeData = async () => {
   loading.value = true
   try {
+    // 加载考试数据
     const res = await request.get('/exam/home')
     if (res.code === '200') {
       const data = res.data
@@ -234,6 +258,17 @@ const loadHomeData = async () => {
       }
     } else {
       ElMessage.error(res.msg || '加载数据失败')
+    }
+    
+    // 加载考试通知
+    try {
+      const planRes = await request.get('/examPlan/selectAll')
+      if (planRes.code === '200') {
+        // 取最新的5条通知，按时间倒序
+        examPlans.value = (planRes.data || []).slice(0, 5)
+      }
+    } catch (e) {
+      console.error('加载考试通知失败:', e)
     }
   } catch (error) {
     console.error('加载首页数据失败:', error)
@@ -416,6 +451,68 @@ onUnmounted(() => {
 @keyframes pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.1); }
+}
+
+/* 考试通知 */
+.notice-section {
+  background: #fff;
+  border: 1px solid #e4e7ed;
+}
+
+.notice-list {
+  padding: 0 20px 20px;
+}
+
+.notice-item {
+  display: flex;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.notice-item:last-child {
+  border-bottom: none;
+}
+
+.notice-badge {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  background: #0e0d0d;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+}
+
+.notice-content {
+  flex: 1;
+}
+
+.notice-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 4px;
+}
+
+.notice-desc {
+  font-size: 14px;
+  color: #606266;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.notice-time {
+  font-size: 12px;
+  color: #909399;
+}
+
+.section-header .notice-icon {
+  color: #409eff;
+  margin-right: 8px;
 }
 
 /* 进行中考试 */

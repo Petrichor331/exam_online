@@ -9,7 +9,7 @@
           <span><el-icon><User /></el-icon> 授课教师：{{ examInfo.teacherName }}</span>
         </div>
       </div>
-      <div class="score-info">
+      <div class="score-info" v-if="examInfo.score !== null">
         <div class="score-box">
           <span class="score-label">考试成绩</span>
           <span class="score-value">{{ examInfo.score }}</span>

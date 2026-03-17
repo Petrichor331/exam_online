@@ -30,6 +30,7 @@ const router = createRouter({
         { path: 'home', meta: { name: '教师首页' }, component: () => import('@/views/teacher/Home.vue')  },
         { path: 'grading', meta: { name: '试卷批阅' }, component: () => import('@/views/teacher/Grading.vue'),  },
         { path: 'course', meta: { name: '课程管理' }, component: () => import('@/views/teacher/Course.vue'),  },
+        { path: 'course-student/:courseId', meta: { name: '课程学生' }, component: () => import('@/views/teacher/CourseStudent.vue')  },
         { path: 'testPaper', meta: { name: '试卷管理' }, component: () => import('@/views/teacher/TestPaper.vue'),  },
         { path: 'question', meta: { name: '题库管理' }, component: () => import('@/views/teacher/Question.vue'),  },
         { path: 'examPlan', meta: { name: '考试安排' }, component: () => import('@/views/teacher/ExamPlan.vue'),  },

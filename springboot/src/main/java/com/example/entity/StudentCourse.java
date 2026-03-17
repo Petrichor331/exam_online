@@ -16,6 +16,12 @@ public class StudentCourse {
     private String courseImg;
     private String teacherName;
     
+    // 学生信息
+    private String username;
+    private String avatar;
+    private String name;
+    private String selectTime;
+    
     public Integer getId() {
         return id;
     }
@@ -70,5 +76,37 @@ public class StudentCourse {
     
     public void setTeacherName(String teacherName) {
         this.teacherName = teacherName;
+    }
+    
+    public String getUsername() {
+        return username;
+    }
+    
+    public void setUsername(String username) {
+        this.username = username;
+    }
+    
+    public String getAvatar() {
+        return avatar;
+    }
+    
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    public String getSelectTime() {
+        return selectTime;
+    }
+    
+    public void setSelectTime(String selectTime) {
+        this.selectTime = selectTime;
     }
 }

@@ -35,6 +35,15 @@ public class TestPaperController {
         return Result.success(pageInfo);
     }
 
+    //查询某教师出的试卷
+    @GetMapping("/selectByTeacher")
+    public Result selectByTeacher(TestPaper testPaper,
+                             @RequestParam(defaultValue = "1") Integer pageNum,
+                             @RequestParam(defaultValue = "10") Integer pageSize){
+        PageInfo<TestPaperVO> pageInfo = testPaperService.selectPage(testPaper,pageNum,pageSize);
+        return Result.success(pageInfo);
+    }
+
 
     @GetMapping("/selectById/{id}")
     public Result selectById(@PathVariable Integer id){

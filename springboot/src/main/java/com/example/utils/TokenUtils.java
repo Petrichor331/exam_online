@@ -28,6 +28,8 @@ import java.util.Date;
 @Component
 public class TokenUtils {
     private static final Logger logger = LoggerFactory.getLogger(TokenUtils.class);
+    private static final String SECRET_KEY = "exam-online-secret-key-2024";
+    
     @Resource
     private AdminService adminService;
     @Resource
@@ -49,12 +51,9 @@ public class TokenUtils {
      * 生成token
      */
     public static String createToken(String data, String sign){
-        //audience是存储数据的一个媒介，存储用户ID和用户角色（1-ADMIN）然后就可以查数据了；sign是用户相对唯一的东西
         return JWT.create().withAudience(data)
-                .withExpiresAt(DateUtil.offsetDay(new Date(), 1))//1天后过期
-                .sign(Algorithm.HMAC256(sign)); //把用户密码加密后再进行签名
-
-        //最后得到的是一个类似xxxx.yyyy.zzzz的字符串 Header.Payload.Signature
+                .withExpiresAt(DateUtil.offsetDay(new Date(), 1))
+                .sign(Algorithm.HMAC256(SECRET_KEY));
     }
     /**
      * 获取当前登录的用户信息

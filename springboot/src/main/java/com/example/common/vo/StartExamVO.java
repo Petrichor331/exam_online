@@ -14,6 +14,7 @@ public class StartExamVO {
     private Long endTime;//结束时间，用当前时间加上考试时长
     private Long paperEndTime;//试卷设置的结束时间（时间戳）
     private List<ExamQuestionVO> questions;//题目列表
+    private Boolean isPractice;//是否是模拟考试
 
 
     public Integer getScoreId() {

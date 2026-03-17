@@ -8,6 +8,8 @@ import com.example.entity.Account;
 import com.example.entity.Student;
 import com.example.exception.CustomException;
 import com.example.mapper.StudentMapper;
+import com.example.utils.BCryptUtils;
+import com.example.utils.PasswordValidator;
 import com.example.utils.TokenUtils;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -33,6 +35,10 @@ public class StudentService {
         if(ObjectUtils.isEmpty(student.getPassword())){
             student.setPassword(Constants.USER_DEFALUT_PASSWORD);
         }
+        if (!PasswordValidator.isValid(student.getPassword())) {
+            throw new CustomException(PasswordValidator.getErrorMessage());
+        }
+        student.setPassword(BCryptUtils.encode(student.getPassword()));
         if(ObjectUtils.isEmpty(student.getName())){
             student.setName(student.getUsername());
         }
@@ -72,7 +78,22 @@ public class StudentService {
         if(dbStudent==null){
             throw new CustomException(ResultCodeEnum.USER_NOT_EXIST_ERROR);
         }
-        if(!dbStudent.getPassword().equals(account.getPassword())){
+        boolean matches = false;
+        String dbPassword = dbStudent.getPassword();
+        // 尝试BCrypt匹配
+        if (dbPassword != null && dbPassword.startsWith("$2")) {
+            matches = BCryptUtils.matches(account.getPassword(), dbPassword);
+        }
+        // 如果BCrypt匹配失败，尝试明文匹配（兼容旧数据）
+        if (!matches) {
+            matches = account.getPassword().equals(dbPassword);
+            // 如果明文匹配成功，自动升级为BCrypt
+            if (matches && dbPassword != null && !dbPassword.startsWith("$2")) {
+                dbStudent.setPassword(BCryptUtils.encode(dbStudent.getPassword()));
+                studentMapper.updateById(dbStudent);
+            }
+        }
+        if (!matches) {
             throw new CustomException(ResultCodeEnum.USER_ACCOUNT_OR_PASSWORD_ERROR);
         }
         if(!dbStudent.getStatus().equals("正常")){
@@ -96,10 +117,10 @@ public class StudentService {
         if(ObjectUtils.isEmpty(dbStudent)){
             throw new CustomException(ResultCodeEnum.USER_NOT_EXIST_ERROR);
         }
-        if(!dbStudent.getPassword().equals(account.getPassword())){
+        if(!BCryptUtils.matches(account.getPassword(), dbStudent.getPassword())){
             throw new CustomException(ResultCodeEnum.USER_ACCOUNT_OR_PASSWORD_ERROR);
         }
-        dbStudent.setPassword(account.getNewPassword());
+        dbStudent.setPassword(BCryptUtils.encode(account.getNewPassword()));
         studentMapper.updateById(dbStudent);
     }
 

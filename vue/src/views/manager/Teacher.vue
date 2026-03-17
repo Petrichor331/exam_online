@@ -7,7 +7,6 @@
     </div>
     <div class="card" style="margin-bottom: 5px">
       <el-button type="primary" plain @click="handleAdd">新增</el-button>
-      <el-button type="danger" plain @click="delBatch">批量删除</el-button>
     </div>
 
     <div class="card" style="margin-bottom: 5px">
@@ -35,7 +34,6 @@
           <template v-slot="scope">
             <el-button type="primary" circle :icon="Edit" @click="handleEdit(scope.row)"></el-button>
             <el-button type="warning" circle :icon="Lock" @click="openDisableDialog(scope.row)" title="禁言"></el-button>
-            <el-button type="danger" circle :icon="Delete" @click="handleDelete(scope.row.id)"></el-button>
           </template>
         </el-table-column>
       </el-table>

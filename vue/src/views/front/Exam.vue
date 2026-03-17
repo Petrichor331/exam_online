@@ -170,8 +170,9 @@ const remainingTime = ref(0)
 const questions = ref([])
 const currentIndex = ref(0)
 const answers = ref({})
-const saving = ref(false)
-const submitted = ref(false)  // 标记是否已提交试卷
+  const saving = ref(false)
+  const submitted = ref(false)  // 标记是否已提交试卷
+  const isPractice = ref(false)  // 标记是否是模拟考试
 
 let timer = null
 let autoSaveTimer = null
@@ -225,6 +226,7 @@ const startExam = async () => {
       endTime.value = data.endTime
       paperEndTime.value = data.paperEndTime || 0
       questions.value = data.questions
+      isPractice.value = data.isPractice || false  // 记录是否是模拟考试
       
       // 初始化答案对象
       questions.value.forEach(q => {
@@ -445,7 +447,13 @@ const submitExam = async (force=false) => {
     
     submitted.value = true  // 标记已提交
     ElMessage.success('交卷成功！')
-    router.push('/front/myCourse')
+    
+    // 模拟考试：跳转到查看答卷页面；正式考试：跳转到成绩列表
+    if (isPractice.value) {
+      router.push(`/front/answer/${scoreId.value}`)
+    } else {
+      router.push('/front/myCourse')
+    }
   } catch (error) {
     ElMessage.error(error.message || '交卷失败')
   } finally {

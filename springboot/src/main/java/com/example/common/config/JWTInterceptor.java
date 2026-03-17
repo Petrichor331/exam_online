@@ -26,6 +26,8 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class JWTInterceptor implements HandlerInterceptor {
 
+    private static final String SECRET_KEY = "exam-online-secret-key-2024";
+    
     @Resource
     private AdminService adminService;
     @Resource
@@ -70,8 +72,7 @@ public class JWTInterceptor implements HandlerInterceptor {
             throw new CustomException(ResultCodeEnum.USER_NOT_EXIST_ERROR);
         }
         try{
-            //通过用户的密码作为密钥再次验证token的合法性
-            JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(account.getPassword())).build();
+            JWTVerifier jwtVerifier = JWT.require(Algorithm.HMAC256(SECRET_KEY)).build();
             jwtVerifier.verify(token);
         }catch (JWTVerificationException e){
             throw new CustomException(ResultCodeEnum.TOKEN_CHECK_ERROR);

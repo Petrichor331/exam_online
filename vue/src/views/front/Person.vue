@@ -80,10 +80,25 @@
         </el-form>
       </div>
 
-      <!-- 成绩分析 -->
+        <!-- 成绩分析 -->
       <div v-if="activeMenu === 'analysis'" class="content-card analysis-card">
         <div class="card-header">
           <h2>成绩分析</h2>
+        </div>
+        <!-- 课程选择 -->
+        <div class="course-select-wrapper">
+          <div class="course-select-label">
+            <el-icon><Collection /></el-icon>
+            <span>请选择课程</span>
+          </div>
+          <el-select 
+            v-model="selectedCourse" 
+            placeholder="选择课程" 
+            class="course-select"
+            @change="handleCourseChange"
+          >
+            <el-option v-for="c in courseList" :key="c.courseId" :label="c.courseName" :value="c.courseId" />
+          </el-select>
         </div>
         
         <!-- 统计卡片 -->
@@ -126,12 +141,7 @@
           </div>
         </div>
         
-        <!-- 课程选择 -->
-        <div class="course-select">
-          <el-select v-model="selectedCourse" placeholder="选择课程" @change="handleCourseChange">
-            <el-option v-for="c in courseList" :key="c.courseId" :label="c.courseName" :value="c.courseId" />
-          </el-select>
-        </div>
+
         
         <!-- 图表区域 -->
         <div class="charts-container">
@@ -196,7 +206,8 @@ import {
   TrendCharts, 
   Trophy, 
   CircleCheck,
-  Plus
+  Plus,
+  Collection
 } from '@element-plus/icons-vue'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
@@ -240,7 +251,7 @@ const selectedCourse = ref(null)
 const knowledgeStats = ref([])
 
 const filteredScoreList = computed(() => {
-  let list = scoreList.value.filter(s => s.paperName !== '试卷已删除')
+  let list = scoreList.value
   // 按课程筛选
   if (selectedCourse.value) {
     list = list.filter(s => s.courseId === selectedCourse.value)
@@ -591,8 +602,48 @@ onMounted(() => {
   margin-bottom: 30px;
 }
 
+.course-select-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: #222;
+  padding: 20px 25px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+}
+
+.course-select-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.course-select-label .el-icon {
+  font-size: 20px;
+}
+
 .course-select {
-  margin-bottom: 20px;
+  flex: 1;
+}
+
+.course-select :deep(.el-input__wrapper) {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: none;
+  border: 2px solid #444;
+}
+
+.course-select :deep(.el-input__wrapper:hover),
+.course-select :deep(.el-input__wrapper.is-focus) {
+  border-color: #666;
+}
+
+.course-select :deep(.el-select__wrapper) {
+  box-shadow: none !important;
 }
 
 .chart-wrapper {

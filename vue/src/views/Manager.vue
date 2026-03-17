@@ -38,20 +38,7 @@
             <el-icon><HomeFilled /></el-icon>
             <span>系统首页</span>
           </el-menu-item>
-          <el-sub-menu index="1">
-            <template #title>
-              <el-icon><Menu /></el-icon>
-              <span>信息管理</span>
-            </template>
-            <el-menu-item v-if="data.user.role==='ADMIN'" index="/manager/notice">系统公告</el-menu-item>
-            <el-menu-item index="/manager/examPlan">考试安排</el-menu-item>
-            <el-menu-item v-if="data.user.role==='ADMIN'"  index="/manager/questionType">题型信息</el-menu-item>
-            <el-menu-item index="/manager/course">课程信息</el-menu-item>
-            <el-menu-item index="/manager/question">题库信息</el-menu-item>
-            <el-menu-item index="/manager/testPaper">试卷信息</el-menu-item>
-            <el-menu-item v-if="data.user.role==='TEACHER'" index="/manager/grading">试卷批阅</el-menu-item>
-          </el-sub-menu>
-          <el-sub-menu index="2" v-if="data.user.role==='ADMIN'">
+          <el-sub-menu index="1" v-if="data.user.role==='ADMIN'">
             <template #title >
               <el-icon ><Menu /></el-icon>
               <span >用户管理</span>
@@ -59,6 +46,19 @@
             <el-menu-item v-if="data.user.role==='ADMIN'" index="/manager/admin">管理员信息</el-menu-item>
             <el-menu-item v-if="data.user.role==='ADMIN'" index="/manager/teacher">教师信息</el-menu-item>
             <el-menu-item v-if="data.user.role==='ADMIN'" index="/manager/student">学生信息</el-menu-item>
+          </el-sub-menu>
+          <el-sub-menu index="2">
+            <template #title>
+              <el-icon><Menu /></el-icon>
+              <span>信息管理</span>
+            </template>
+            <el-menu-item v-if="data.user.role==='ADMIN'" index="/manager/notice">系统公告</el-menu-item>
+            <el-menu-item v-if="data.user.role==='TEACHER'"  index="/manager/examPlan">考试安排</el-menu-item>
+            <el-menu-item v-if="data.user.role==='ADMIN'"  index="/manager/questionType">题型信息</el-menu-item>
+            <el-menu-item index="/manager/course">课程信息</el-menu-item>
+            <el-menu-item index="/manager/question">题库信息</el-menu-item>
+            <el-menu-item index="/manager/testPaper">试卷信息</el-menu-item>
+            <el-menu-item v-if="data.user.role==='TEACHER'" index="/manager/grading">试卷批阅</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </div>

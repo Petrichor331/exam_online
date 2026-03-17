@@ -572,6 +572,11 @@ public class TestPaperService {
     }
     
     public PageInfo<TestPaperVO> selectPage(TestPaper testPaper, Integer pageNum, Integer pageSize) {
+        Account account = TokenUtils.getCurrentUser();
+        if(account.getRole().equals("TEACHER")){
+            Integer teacherId = account.getId();
+            testPaper.setTeacherId(teacherId);
+        }
         PageHelper.startPage(pageNum, pageSize);
         List<TestPaperVO> list = testPaperMapper.selectAll(testPaper);
         return PageInfo.of(list);

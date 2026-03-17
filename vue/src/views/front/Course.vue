@@ -225,8 +225,12 @@ const markSelectedCourses = async () => {
 }
 const openCodeDialog = (course) => {
   currentSelectCourse.value = course
-  inputCode.value = ''
-  codeDialogVisible.value = true
+  if (course.code) {
+    inputCode.value = ''
+    codeDialogVisible.value = true
+  } else {
+    selectCourse(course)
+  }
 }
 
 const confirmSelectCourse = async () => {

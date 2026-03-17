@@ -8,6 +8,8 @@ import com.example.entity.Account;
 import com.example.entity.Admin;
 import com.example.exception.CustomException;
 import com.example.mapper.AdminMapper;
+import com.example.utils.BCryptUtils;
+import com.example.utils.PasswordValidator;
 import com.example.utils.TokenUtils;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -30,6 +32,10 @@ public class AdminService {
         if(ObjectUtils.isEmpty(admin.getPassword())){
             admin.setPassword(Constants.USER_DEFALUT_PASSWORD);
         }
+        if (!PasswordValidator.isValid(admin.getPassword())) {
+            throw new CustomException(PasswordValidator.getErrorMessage());
+        }
+        admin.setPassword(BCryptUtils.encode(admin.getPassword()));
         if(ObjectUtils.isEmpty(admin.getName())){
             admin.setName(admin.getUsername());
         }
@@ -68,7 +74,22 @@ public class AdminService {
         if(dbAdmin==null){
             throw new CustomException(ResultCodeEnum.USER_NOT_EXIST_ERROR);
         }
-        if(!dbAdmin.getPassword().equals(account.getPassword())){
+        boolean matches = false;
+        String dbPassword = dbAdmin.getPassword();
+        // 尝试BCrypt匹配
+        if (dbPassword != null && dbPassword.startsWith("$2")) {
+            matches = BCryptUtils.matches(account.getPassword(), dbPassword);
+        }
+        // 如果BCrypt匹配失败，尝试明文匹配（兼容旧数据）
+        if (!matches) {
+            matches = account.getPassword().equals(dbPassword);
+            // 如果明文匹配成功，自动升级为BCrypt
+            if (matches && dbPassword != null && !dbPassword.startsWith("$2")) {
+                dbAdmin.setPassword(BCryptUtils.encode(dbAdmin.getPassword()));
+                adminMapper.updateById(dbAdmin);
+            }
+        }
+        if (!matches) {
             throw new CustomException(ResultCodeEnum.USER_ACCOUNT_OR_PASSWORD_ERROR);
         }
         String token = TokenUtils.createToken(dbAdmin.getId()+"-"+dbAdmin.getRole(), dbAdmin.getPassword());
@@ -82,10 +103,10 @@ public class AdminService {
         if(ObjectUtils.isEmpty(dbAdmin)){
             throw new CustomException(ResultCodeEnum.USER_NOT_EXIST_ERROR);
         }
-        if(!dbAdmin.getPassword().equals(account.getPassword())){
+        if(!BCryptUtils.matches(account.getPassword(), dbAdmin.getPassword())){
             throw new CustomException(ResultCodeEnum.USER_ACCOUNT_OR_PASSWORD_ERROR);
         }
-        dbAdmin.setPassword(account.getNewPassword());
+        dbAdmin.setPassword(BCryptUtils.encode(account.getNewPassword()));
         adminMapper.updateById(dbAdmin);
     }
 }

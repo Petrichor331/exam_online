@@ -387,8 +387,19 @@ public class ScoreService {
             //查试卷信息
             TestPaper testPaper = testPaperMapper.selectById(score.getPaperId());
             
-            // 试卷已删除则跳过
+            // 模拟练习则跳过
             if (testPaper == null) {
+                // 试卷已删除，保留成绩记录，显示"试卷已删除"
+                ScoreListVO scoreListVO = new ScoreListVO();
+                scoreListVO.setScoreId(score.getId());
+                scoreListVO.setStudentId(score.getStudentId());
+                scoreListVO.setPaperId(score.getPaperId());
+                scoreListVO.setTotalScore(score.getTotalScore());
+                scoreListVO.setStatus(score.getStatus());
+                scoreListVO.setSubmitTime(score.getSubmitTime());
+                scoreListVO.setPaperName("试卷已删除");
+                scoreListVO.setCourseId(null);
+                scoreListVOS.add(scoreListVO);
                 continue;
             }
             

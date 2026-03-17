@@ -59,6 +59,9 @@
           <el-button type="primary" link @click="handleEdit(course)">
             <el-icon><Edit /></el-icon>编辑
           </el-button>
+          <el-button type="success" link @click="viewStudents(course)">
+            <el-icon><User /></el-icon>学生
+          </el-button>
           <el-button type="danger" link @click="handleDelete(course.id)">
             <el-icon><Delete /></el-icon>删除
           </el-button>
@@ -132,11 +135,13 @@
 
 <script setup>
 import { reactive, ref } from "vue"
+import { useRouter } from "vue-router"
 import request from "@/utils/request.js"
 import { getCurrentUser } from "@/utils/userStorage.js"
 import { ElMessage, ElMessageBox } from "element-plus"
 import { Delete, Edit, Plus, Search, Document, User } from "@element-plus/icons-vue"
 
+const router = useRouter()
 const formRef = ref()
 const baseUrl = import.meta.env.VITE_BASE_URL
 
@@ -191,6 +196,10 @@ const handleAdd = () => {
 const handleEdit = (row) => {
   data.form = JSON.parse(JSON.stringify(row))
   data.formVisible = true
+}
+
+const viewStudents = (course) => {
+  router.push(`/teacher/course-student/${course.id}`)
 }
 
 const handleDelete = (id) => {

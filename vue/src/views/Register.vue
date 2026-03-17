@@ -94,6 +94,18 @@ const validatePass = (rule, value, callback) => {
   }
 }
 
+const validatePassword = (rule, value, callback) => {
+  if (!value) {
+    callback(new Error('请输入密码'))
+  } else {
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/
+    if (!regex.test(value)) {
+      callback(new Error('密码必须包含大小写字母和数字，且至少8位'))
+    }
+    callback()
+  }
+}
+
 onMounted(() => {
   const user = getCurrentUser()
   if (user && user.id) {
@@ -111,7 +123,7 @@ const data = reactive({
   form: {},
   rules: {
     username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
-    password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+    password: [{ validator: validatePassword, trigger: 'blur' }],
     confirmPassword: [{ validator: validatePass, trigger: 'blur' }]
   }
 })

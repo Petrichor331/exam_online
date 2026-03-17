@@ -291,6 +291,7 @@ import { reactive, ref } from "vue"
 import request from "@/utils/request.js"
 import { ElMessage, ElMessageBox } from "element-plus"
 import { Delete, Edit, Plus, Search, Document } from "@element-plus/icons-vue"
+import { getCurrentUser } from '@/utils/userStorage.js'
 
 const formRef = ref()
 const questionTableRef = ref()
@@ -359,8 +360,8 @@ const data = reactive({
 const load = async () => {
   data.loading = true
   try {
-    const res = await request.get('/testPaper/selectPage', {
-      params: { pageNum: data.pageNum, pageSize: data.pageSize, name: data.name }
+    const res = await request.get('/testPaper/selectByTeacher', {
+      params: { pageNum: data.pageNum, pageSize: data.pageSize}
     })
     if (res.code === '200') {
       data.tableData = res.data?.list || []
@@ -374,7 +375,10 @@ const load = async () => {
 }
 
 const loadCourses = async () => {
-  const res = await request.get('/course/selectAll')
+  const user = getCurrentUser()
+  const res = await request.get('/course/selectAll', {
+    params: { teacherId: user?.id }
+  })
   if (res.code === '200') data.courseList = res.data || []
 }
 

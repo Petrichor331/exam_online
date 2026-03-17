@@ -91,4 +91,40 @@ public class StudentCourseController {
             return Result.error(e.getMessage());
         }
     }
+    
+    /**
+     * 教师查看课程学生列表
+     */
+    @GetMapping("/teacher/list/{courseId}")
+    public Result getCourseStudents(@PathVariable Integer courseId) {
+        try {
+            Account currentUser = TokenUtils.getCurrentUser();
+            if (currentUser == null || !"TEACHER".equalsIgnoreCase(currentUser.getRole())) {
+                return Result.error("请先登录教师账号");
+            }
+            
+            List<StudentCourse> students = studentCourseService.getCourseStudents(courseId);
+            return Result.success(students);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 教师移除学生（退课）
+     */
+    @DeleteMapping("/teacher/{courseId}/{studentId}")
+    public Result removeStudent(@PathVariable Integer courseId, @PathVariable Integer studentId) {
+        try {
+            Account currentUser = TokenUtils.getCurrentUser();
+            if (currentUser == null || !"TEACHER".equalsIgnoreCase(currentUser.getRole())) {
+                return Result.error("请先登录教师账号");
+            }
+            
+            studentCourseService.removeStudent(courseId, studentId, currentUser.getName());
+            return Result.success("已移除该学生");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }

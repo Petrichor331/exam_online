@@ -499,6 +499,10 @@ public class ExamService {
         }
         questions.sort(Comparator.comparing(ExamQuestionVO::getTypeId));
         startExamVO.setQuestions(questions);
+        
+        // 设置是否是模拟考试
+        startExamVO.setIsPractice("practice".equals(testPaper.getType()));
+        
         return startExamVO;
     }
     
@@ -576,14 +580,23 @@ public class ExamService {
         score.setSubmitTime(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         scoreMapper.updateById(score);
 
-        // 3. 客观题自动评分
+        // 3. 查询试卷类型，判断是否是模拟考试
+        TestPaper paper = testPaperMapper.selectById(score.getPaperId());
+        boolean isPractice = paper != null && "practice".equals(paper.getType());
+
+        // 4. 客观题自动评分
         autoGradeObjectiveQuestions(scoreId);
 
-        // 4. 更新考试状态为待评分（不立即显示分数，等教师批改）
-        scoreMapper.updateStatus(scoreId, "grading");
-
-        // 5. 异步调用AI评分（简答题）
-        callPythonGradingAsync(scoreId);
+        // 5. 根据试卷类型更新状态
+        if (isPractice) {
+            // 模拟考试：直接完成，显示对错
+            scoreMapper.updateStatus(scoreId, "finished");
+        } else {
+            // 正式考试：待评分，等教师批改主观题
+            scoreMapper.updateStatus(scoreId, "grading");
+            // 异步调用AI评分（简答题）
+            callPythonGradingAsync(scoreId);
+        }
 
         // 6. 删除 Redis 中的开始时间
         String startKey = "exam:start:" + score.getStudentId() + ":" + score.getPaperId();
@@ -746,7 +759,13 @@ public class ExamService {
         Teacher teacher = teacherMapper.selectById(paper.getTeacherId());
         examInfo.put("teacherName", teacher != null ? teacher.getName() : "");
         examInfo.put("startTime", paper.getStart());
-        examInfo.put("score", score.getTotalScore());
+        
+        // 模拟考试不显示分数，只显示对错
+        if ("practice".equals(paper.getType())) {
+            examInfo.put("score", null);
+        } else {
+            examInfo.put("score", score.getTotalScore());
+        }
         examInfo.put("totalScore", 100);
         
         result.put("examInfo", examInfo);
