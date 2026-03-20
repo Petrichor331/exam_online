@@ -13,6 +13,7 @@ public class TestPaperVO {
     private String endTime;//结束时间
     private String status;//试卷状态
     private Integer duration;//考试时长
+    private Boolean hasExam = false;//是否已有学生参加考试
 
     public Integer getDuration() {
         return duration;
@@ -92,5 +93,13 @@ public class TestPaperVO {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Boolean getHasExam() {
+        return hasExam;
+    }
+
+    public void setHasExam(Boolean hasExam) {
+        this.hasExam = hasExam;
     }
 }

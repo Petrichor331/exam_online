@@ -10,6 +10,7 @@ import com.example.entity.Question;
 import com.example.entity.TestPaper;
 import com.example.exception.CustomException;
 import com.example.mapper.QuestionMapper;
+import com.example.mapper.ScoreMapper;
 import com.example.mapper.TestPaperMapper;
 import com.example.utils.TokenUtils;
 import com.github.pagehelper.PageHelper;
@@ -31,6 +32,9 @@ public class TestPaperService {
 
     @Resource
     private QuestionMapper questionMapper;
+
+    @Resource
+    private ScoreMapper scoreMapper;
 
     private static final Logger log = LoggerFactory.getLogger(TestPaperService.class);
 
@@ -591,7 +595,29 @@ public class TestPaperService {
     }
 
     public void updateById(TestPaper testPaper) {
+        // 检查试卷是否已有学生参加考试
+        if (hasExamRecords(testPaper.getId())) {
+            throw new CustomException("该试卷已有学生参加考试，禁止修改");
+        }
+        // 检查试卷是否已结束
+        TestPaper existing = testPaperMapper.selectById(testPaper.getId());
+        if (existing != null && existing.getEnd() != null) {
+            java.time.LocalDateTime endTime = DateUtil.parseLocalDateTime(existing.getEnd());
+            if (endTime.isBefore(java.time.LocalDateTime.now())) {
+                throw new CustomException("该试卷已结束，禁止修改");
+            }
+        }
         testPaperMapper.updateById(testPaper);
+    }
+
+    /**
+     * 检查试卷是否已有学生参加考试
+     */
+    public boolean hasExamRecords(Integer paperId) {
+        if (paperId == null) {
+            return false;
+        }
+        return scoreMapper.countByPaperId(paperId) > 0;
     }
 
     public void deleteById(Integer id) {

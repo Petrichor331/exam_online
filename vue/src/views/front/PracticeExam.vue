@@ -143,13 +143,16 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/utils/request.js'
+import { getCurrentUser } from '@/utils/userStorage.js'
 
 const router = useRouter()
 const route = useRoute()
 const loading = ref(false)
 
 const courseId = ref(route.params.courseId)
-const courseName = ref('')
+const isWrongMode = ref(route.query.wrong === '1')
+const user = getCurrentUser()
+const courseName = ref(isWrongMode.value ? '错题练习' : '')
 const questions = ref([])
 const allQuestions = ref([])
 
@@ -172,7 +175,21 @@ const answeredCount = computed(() => {
   return Object.keys(submittedAnswers).length
 })
 
-const STORAGE_KEY = `practice_${courseId.value}`
+const STORAGE_KEY = computed(() => `practice_${courseId.value}`)
+const WRONG_KEY = computed(() => `wrong_${courseId.value}`)
+const WRONG_PROGRESS_KEY = computed(() => `wrong_practice_${courseId.value}`)
+
+// 保存错题到localStorage
+const saveWrongQuestion = (questionId) => {
+  const key = WRONG_KEY.value
+  console.log('保存错题，key:', key, 'questionId:', questionId)
+  const wrongIds = JSON.parse(localStorage.getItem(key) || '[]')
+  if (!wrongIds.includes(questionId)) {
+    wrongIds.push(questionId)
+    localStorage.setItem(key, JSON.stringify(wrongIds))
+    console.log('错题已保存，当前错题列表:', wrongIds)
+  }
+}
 
 const getTypeTag = (typeId) => {
   const tags = { 1: 'success', 2: 'success', 3: 'info', 4: 'warning', 5: 'danger' }
@@ -200,7 +217,11 @@ const getUserAnswer = (questionId) => {
 
 const submitSingleAnswer = (questionId, answer, correctAnswer) => {
   submittedAnswers[questionId] = true
-  answerResults[questionId] = answer === correctAnswer
+  const isCorrect = answer === correctAnswer
+  answerResults[questionId] = isCorrect
+  if (!isCorrect) {
+    saveWrongQuestion(questionId)
+  }
   saveProgress()
 }
 
@@ -212,6 +233,9 @@ const submitMultiAnswer = (questionId, answers, correctAnswer) => {
   
   submittedAnswers[questionId] = true
   answerResults[questionId] = correct
+  if (!correct) {
+    saveWrongQuestion(questionId)
+  }
   saveProgress()
 }
 
@@ -232,14 +256,35 @@ const applyFilter = () => {
 const loadQuestions = async () => {
   loading.value = true
   try {
-    const res = await request.get('/question/list', {
-      params: { courseId: courseId.value }
-    })
+    let res
+    if (isWrongMode.value) {
+      // 刷错题模式：从localStorage读取错题ID
+      const wrongKey = `wrong_${courseId.value}`
+      const wrongIds = JSON.parse(localStorage.getItem(wrongKey) || '[]')
+      
+      if (!wrongIds || wrongIds.length === 0) {
+        ElMessage.warning('暂无错题记录')
+        loading.value = false
+        return
+      }
+      
+      const questionIdsStr = wrongIds.join(',')
+      res = await request.get('/question/wrong-questions', {
+        params: { questionIds: questionIdsStr }
+      })
+    } else {
+      // 普通刷题模式
+      res = await request.get('/question/list', {
+        params: { courseId: courseId.value }
+      })
+    }
     
     if (res.code === '200') {
       allQuestions.value = res.data || []
       questions.value = [...allQuestions.value]
-      courseName.value = allQuestions.value[0]?.courseName || '刷题练习'
+      if (!isWrongMode.value) {
+        courseName.value = allQuestions.value[0]?.courseName || '刷题练习'
+      }
       
       // 加载保存的进度
       loadProgress()
@@ -253,6 +298,8 @@ const loadQuestions = async () => {
 }
 
 const saveProgress = () => {
+  // 错题练习模式和普通刷题模式使用不同的key
+  const key = isWrongMode.value ? WRONG_PROGRESS_KEY.value : STORAGE_KEY.value
   const progress = {
     userAnswers: { ...userAnswers },
     multiAnswers: { ...multiAnswers },
@@ -260,11 +307,16 @@ const saveProgress = () => {
     submittedAnswers: { ...submittedAnswers },
     answerResults: { ...answerResults }
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
+  localStorage.setItem(key, JSON.stringify(progress))
 }
 
 const loadProgress = () => {
-  const saved = localStorage.getItem(STORAGE_KEY)
+  // 错题练习模式不加载普通刷题的进度
+  if (isWrongMode.value) {
+    return
+  }
+  const key = STORAGE_KEY.value
+  const saved = localStorage.getItem(key)
   if (saved) {
     try {
       const progress = JSON.parse(saved)
@@ -280,7 +332,9 @@ const loadProgress = () => {
 }
 
 const resetPractice = () => {
-  localStorage.removeItem(STORAGE_KEY)
+  // 错题练习模式和普通刷题模式使用不同的key
+  const key = isWrongMode.value ? WRONG_PROGRESS_KEY.value : STORAGE_KEY.value
+  localStorage.removeItem(key)
   Object.keys(userAnswers).forEach(k => delete userAnswers[k])
   Object.keys(multiAnswers).forEach(k => delete multiAnswers[k])
   Object.keys(textAnswers).forEach(k => delete textAnswers[k])

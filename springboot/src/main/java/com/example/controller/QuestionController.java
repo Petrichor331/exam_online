@@ -7,6 +7,7 @@ import com.example.common.vo.ExamQuestionVO;
 import com.example.common.vo.QuestionListVO;
 import com.example.entity.Question;
 import com.example.entity.QuestionOption;
+import com.example.mapper.StudentAnswerMapper;
 import com.example.service.QuestionService;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
@@ -20,6 +21,9 @@ import java.util.List;
 public class QuestionController {
     @Resource
     private QuestionService questionService;
+
+    @Resource
+    private StudentAnswerMapper studentAnswerMapper;
 
     @PostMapping("/add")
     public Result add(@RequestBody QuestionAddDTO questionAddDTO){
@@ -107,6 +111,45 @@ public class QuestionController {
             @RequestParam(required = false) Integer difficulty
     ) {
         List<ExamQuestionVO> questions = questionService.getQuestionsByCourse(courseId, typeIds, knowledgePoints, difficulty);
+        return Result.success(questions);
+    }
+
+    /**
+     * 获取错题列表
+     */
+    @GetMapping("/wrong-questions")
+    public Result getWrongQuestions(
+            @RequestParam(required = false) Integer studentId,
+            @RequestParam(required = false) Integer courseId,
+            @RequestParam(required = false) String questionIds
+    ) {
+        List<ExamQuestionVO> questions;
+        if (questionIds != null && !questionIds.isEmpty()) {
+            // 解析题目ID列表
+            List<Integer> questionIdsList = new java.util.ArrayList<>();
+            for (String id : questionIds.split(",")) {
+                try {
+                    questionIdsList.add(Integer.parseInt(id.trim()));
+                } catch (Exception e) {
+                    // ignore
+                }
+            }
+            if (questionIdsList.isEmpty()) {
+                return Result.success(null);
+            }
+            // 去重
+            questionIdsList = questionIdsList.stream().distinct().toList();
+            questions = questionService.getQuestionsByIds(questionIdsList);
+        } else if (studentId != null && courseId != null) {
+            // 从数据库查询（备用）
+            List<Integer> wrongQuestionIds = studentAnswerMapper.selectWrongQuestionIds(studentId, courseId);
+            if (wrongQuestionIds == null || wrongQuestionIds.isEmpty()) {
+                return Result.success(null);
+            }
+            questions = questionService.getQuestionsByIds(wrongQuestionIds);
+        } else {
+            return Result.success(null);
+        }
         return Result.success(questions);
     }
 

@@ -11,14 +11,14 @@
         :key="course.id" 
         class="course-card"
         shadow="hover"
-        @click="enterPractice(course)"
       >
         <div class="course-info">
           <h3>{{ course.name }}</h3>
           <p class="course-desc">{{ course.description || '点击开始刷题' }}</p>
         </div>
         <div class="course-action">
-          <el-button class="btn-black">开始刷题</el-button>
+          <el-button class="btn-black" @click="enterPractice(course)">开始刷题</el-button>
+          <el-button class="btn-wrong" @click="practiceWrong(course)">刷错题</el-button>
         </div>
       </el-card>
     </div>
@@ -30,10 +30,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import request from '@/utils/request.js'
+import { getCurrentUser } from '@/utils/userStorage.js'
 
 const router = useRouter()
 const courseList = ref([])
+const user = getCurrentUser()
 
 const loadCourses = async () => {
   try {
@@ -48,6 +51,38 @@ const loadCourses = async () => {
 
 const enterPractice = (course) => {
   router.push(`/front/practice-exam/${course.id}`)
+}
+
+const practiceWrong = async (course) => {
+  try {
+    // 从localStorage读取错题ID列表
+    const wrongKey = `wrong_${course.id}`
+    console.log('读取错题，key:', wrongKey)
+    const wrongIds = JSON.parse(localStorage.getItem(wrongKey) || '[]')
+    console.log('读取到的错题ID:', wrongIds)
+    
+    if (!wrongIds || wrongIds.length === 0) {
+      ElMessage.warning('暂无错题记录')
+      return
+    }
+    
+    // 转成逗号分隔的字符串
+    const questionIdsStr = wrongIds.join(',')
+    
+    const res = await request.get('/question/wrong-questions', {
+      params: { questionIds: questionIdsStr }
+    })
+    if (res.code === '200') {
+      if (!res.data || res.data.length === 0) {
+        ElMessage.warning('暂无错题记录')
+        return
+      }
+      router.push(`/front/practice-exam/${course.id}?wrong=1`)
+    }
+  } catch (error) {
+    console.error('获取错题失败:', error)
+    ElMessage.error('获取错题失败')
+  }
 }
 
 onMounted(() => {
@@ -124,6 +159,18 @@ onMounted(() => {
 .btn-black:hover {
   background: #666;
   border-color: #666;
+  color: #fff;
+}
+
+.btn-wrong {
+  background: #fff;
+  border-color: #333;
+  color: #333;
+}
+
+.btn-wrong:hover {
+  background: #333;
+  border-color: #333;
   color: #fff;
 }
 </style>

@@ -86,4 +86,15 @@
         WHERE id = #{id}
     </update>
 
+    <!-- 查询某学生在某课程下的错题ID列表（得分未满分） -->
+    <select id="selectWrongQuestionIds" resultType="int">
+        SELECT DISTINCT sa.question_id
+        FROM student_answer sa
+        INNER JOIN test_paper tp ON sa.paper_id = tp.id
+        WHERE sa.student_id = #{studentId}
+        AND tp.course_id = #{courseId}
+        AND (sa.final_score IS NULL OR sa.final_score &lt; sa.max_score)
+        AND tp.type != 'practice'
+    </select>
+
 </mapper>

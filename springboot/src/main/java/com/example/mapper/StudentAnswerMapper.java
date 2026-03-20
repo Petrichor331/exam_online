@@ -66,4 +66,9 @@ public interface StudentAnswerMapper {
      */
     @Select("select * from student_answer where student_id = #{studentId} and question_id = #{questionId} and paper_id = #{paperId}")
     StudentAnswer selectByStudentAndPaperAndQuestion(@Param("studentId") Integer studentId, @Param("paperId") Integer paperId,@Param("questionId") Integer questionId);
+
+    /**
+     * 查询某学生在某课程下的错题ID列表
+     */
+    List<Integer> selectWrongQuestionIds(@Param("studentId") Integer studentId, @Param("courseId") Integer courseId);
 }

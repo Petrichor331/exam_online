@@ -97,6 +97,7 @@
             class="course-select"
             @change="handleCourseChange"
           >
+            <el-option label="总成绩分析" :value="0" />
             <el-option v-for="c in courseList" :key="c.courseId" :label="c.courseName" :value="c.courseId" />
           </el-select>
         </div>
@@ -150,6 +151,22 @@
             <v-chart :option="lineChartOption" :autoresize="true" class="chart"></v-chart>
           </div>
           <div class="chart-wrapper">
+            <div class="chart-title">成绩等级分布</div>
+            <v-chart :option="gradeDistributionOption" :autoresize="true" class="chart"></v-chart>
+          </div>
+        </div>
+        
+        <!-- 总成绩分析时显示各课程平均分对比 -->
+        <div v-if="selectedCourse === 0" class="charts-container" style="margin-top: 20px;">
+          <div class="chart-wrapper full-width">
+            <div class="chart-title">各课程平均分对比</div>
+            <v-chart :option="courseComparisonOption" :autoresize="true" class="chart"></v-chart>
+          </div>
+        </div>
+        
+        <!-- 选择具体课程时显示知识点掌握程度 -->
+        <div v-if="selectedCourse !== 0" class="charts-container" style="margin-top: 20px;">
+          <div class="chart-wrapper full-width">
             <div class="chart-title">知识点掌握程度</div>
             <div v-if="knowledgeStats.length === 0" class="no-data">暂无数据</div>
             <div v-else class="knowledge-list">
@@ -212,10 +229,10 @@ import {
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart, PieChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
+import { LineChart, PieChart, BarChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent, LegendComponent, TitleComponent } from 'echarts/components'
 
-use([CanvasRenderer, LineChart, PieChart, GridComponent, TooltipComponent, LegendComponent])
+use([CanvasRenderer, LineChart, PieChart, BarChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent])
 
 const router = useRouter()
 const baseUrl = import.meta.env.VITE_BASE_URL
@@ -252,8 +269,8 @@ const knowledgeStats = ref([])
 
 const filteredScoreList = computed(() => {
   let list = scoreList.value
-  // 按课程筛选
-  if (selectedCourse.value) {
+  // 按课程筛选（selectedCourse为0表示总成绩分析，不筛选）
+  if (selectedCourse.value && selectedCourse.value !== 0) {
     list = list.filter(s => s.courseId === selectedCourse.value)
   }
   // 只显示最近5条，按时间倒序
@@ -352,6 +369,128 @@ const lineChartOption = computed(() => {
   }
 })
 
+// 成绩等级分布饼图
+const gradeDistributionOption = computed(() => {
+  const finishedScores = scoreList.value.filter(s => s.status === 'finished' && s.score !== undefined && s.score !== null)
+  const distribution = {
+    excellent: 0, // 优秀 ≥90
+    good: 0,      // 良好 80-89
+    pass: 0,      // 及格 60-79
+    fail: 0       // 不及格 <60
+  }
+  
+  finishedScores.forEach(s => {
+    if (s.score >= 90) distribution.excellent++
+    else if (s.score >= 80) distribution.good++
+    else if (s.score >= 60) distribution.pass++
+    else distribution.fail++
+  })
+  
+  const total = finishedScores.length
+  if (total === 0) {
+    return {
+      tooltip: { trigger: 'item', formatter: '{b}: {c}次 ({d}%)' },
+      legend: { bottom: '5%', left: 'center' },
+      series: [{
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['50%', '45%'],
+        data: [
+          { value: 0, name: '优秀(≥90分)', itemStyle: { color: '#67c23a' } },
+          { value: 0, name: '良好(80-89分)', itemStyle: { color: '#409eff' } },
+          { value: 0, name: '及格(60-79分)', itemStyle: { color: '#e6a23c' } },
+          { value: 0, name: '不及格(<60分)', itemStyle: { color: '#f56c6c' } }
+        ],
+        label: { show: false },
+        emphasis: {
+          label: { show: true, fontSize: 14, fontWeight: 'bold' }
+        }
+      }]
+    }
+  }
+  
+  return {
+    tooltip: { trigger: 'item', formatter: '{b}: {c}次 ({d}%)' },
+    legend: { bottom: '5%', left: 'center' },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      center: ['50%', '45%'],
+      data: [
+        { value: distribution.excellent, name: '优秀(≥90分)', itemStyle: { color: '#67c23a' } },
+        { value: distribution.good, name: '良好(80-89分)', itemStyle: { color: '#409eff' } },
+        { value: distribution.pass, name: '及格(60-79分)', itemStyle: { color: '#e6a23c' } },
+        { value: distribution.fail, name: '不及格(<60分)', itemStyle: { color: '#f56c6c' } }
+      ],
+      label: { show: false },
+      emphasis: {
+        label: { show: true, fontSize: 14, fontWeight: 'bold' }
+      }
+    }]
+  }
+})
+
+// 各课程平均分对比柱状图
+const courseComparisonOption = computed(() => {
+  const finishedScores = scoreList.value.filter(s => s.status === 'finished' && s.score !== undefined && s.score !== null && s.courseName)
+  
+  // 按课程分组计算平均分
+  const courseStats = {}
+  finishedScores.forEach(s => {
+    if (!courseStats[s.courseName]) {
+      courseStats[s.courseName] = { total: 0, count: 0 }
+    }
+    courseStats[s.courseName].total += s.score
+    courseStats[s.courseName].count++
+  })
+  
+  const courseNames = Object.keys(courseStats)
+  const avgScores = courseNames.map(name => 
+    Math.round(courseStats[name].total / courseStats[name].count)
+  )
+  
+  if (courseNames.length === 0) {
+    return {
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+      xAxis: { type: 'category', data: ['暂无数据'] },
+      yAxis: { type: 'value', min: 0, max: 100 },
+      series: [{
+        name: '平均分',
+        type: 'bar',
+        data: [0],
+        itemStyle: { color: '#909399' }
+      }]
+    }
+  }
+  
+  return {
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+    xAxis: { 
+      type: 'category', 
+      data: courseNames,
+      axisLabel: { rotate: 30, interval: 0 }
+    },
+    yAxis: { type: 'value', min: 0, max: 100 },
+    series: [{
+      name: '平均分',
+      type: 'bar',
+      data: avgScores,
+      itemStyle: { 
+        color: function(params) {
+          const score = params.value
+          if (score >= 90) return '#67c23a'
+          if (score >= 80) return '#409eff'
+          if (score >= 60) return '#e6a23c'
+          return '#f56c6c'
+        }
+      },
+      label: { show: true, position: 'top', formatter: '{c}分' }
+    }]
+  }
+})
+
 const loadScoreData = () => {
   request.get('/score/myScores', {
     params: { studentId: data.user.id }
@@ -366,6 +505,7 @@ const loadScoreData = () => {
         status: score.status,
         score: score.totalScore,
         courseId: score.courseId,
+        courseName: score.courseName,
       }));
       calculateStats()
     }
@@ -375,11 +515,10 @@ const loadScoreData = () => {
   request.get('/studentCourse/my-courses').then(res => {
     if (res.code === '200') {
       courseList.value = res.data || []
-      // 默认选中第一个课程
-      if (courseList.value.length > 0 && !selectedCourse.value) {
-        selectedCourse.value = courseList.value[0].courseId
+      // 默认选中总成绩分析
+      if (!selectedCourse.value && selectedCourse.value !== 0) {
+        selectedCourse.value = 0
         calculateStats()
-        loadKnowledgeStats()
       }
     }
   })
@@ -405,13 +544,16 @@ const handleCourseChange = () => {
   console.log('选择课程:', selectedCourse.value)
   console.log('成绩列表:', scoreList.value)
   calculateStats()
-  loadKnowledgeStats()
+  // 只有选择具体课程时才加载知识点统计
+  if (selectedCourse.value !== 0) {
+    loadKnowledgeStats()
+  }
 }
 
 const calculateStats = () => {
   let list = scoreList.value
-  if (selectedCourse.value) {
-    // 根据课程筛选
+  // selectedCourse为0表示总成绩分析，不筛选课程；否则按课程筛选
+  if (selectedCourse.value && selectedCourse.value !== 0) {
     list = scoreList.value.filter(s => s.courseId === selectedCourse.value)
   }
   const finished = list.filter(s => s.status === 'finished' && s.score !== undefined && s.score !== null)
@@ -630,13 +772,6 @@ onMounted(() => {
   flex: 1;
 }
 
-.course-select :deep(.el-input__wrapper) {
-  background: #fff;
-  border-radius: 6px;
-  box-shadow: none;
-  border: 2px solid #444;
-}
-
 .course-select :deep(.el-input__wrapper:hover),
 .course-select :deep(.el-input__wrapper.is-focus) {
   border-color: #666;
@@ -734,6 +869,11 @@ onMounted(() => {
 .score-good { color: #555; font-weight: bold; }
 .score-pass { color: #777; font-weight: bold; }
 .score-fail { color: #999; font-weight: bold; }
+
+.chart-wrapper.full-width {
+  grid-column: 1 / -1;
+  min-height: 350px;
+}
 
 @media (max-width: 1200px) {
   .stats-grid {

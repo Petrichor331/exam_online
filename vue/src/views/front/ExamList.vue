@@ -65,14 +65,14 @@
 
         <!-- 卡片底部按钮 -->
         <div class="exam-card-footer">
-          <!-- 未考/进行中 -->
+          <!-- 开始考试/继续考试 -->
           <el-button 
             v-if="exam.status === 'pending' || exam.status === 'ongoing'" 
             type="primary" 
             size="large"
             @click="goToExam(exam)"
           >
-            {{ exam.status === 'ongoing' ? '继续考试' : '开始考试' }}
+            {{ exam.status === 'ongoing' && exam.scoreId ? '继续考试' : '开始考试' }}
           </el-button>
           <!-- 待评分 -->
           <el-button 
@@ -107,6 +107,75 @@
       />
     </div>
 
+    <!-- 考试确认弹窗 -->
+    <el-dialog
+      v-model="examConfirmVisible"
+      :title="examConfirmTitle"
+      width="580px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      :show-close="false"
+      class="exam-confirm-dialog"
+    >
+      <div class="exam-notice">
+        <!-- 一、考试前准备 -->
+        <div class="notice-section">
+          <div class="notice-header">
+            <div class="notice-icon prepare">
+              <el-icon><Setting /></el-icon>
+            </div>
+            <h4>考试前准备</h4>
+          </div>
+          <ul class="notice-list">
+            <li>确保设备电量充足，网络连接稳定</li>
+            <li>建议使用Chrome、Firefox或Edge浏览器</li>
+            <li>关闭其他无关程序，保持考试环境安静</li>
+          </ul>
+        </div>
+        
+        <!-- 二、考试规则 -->
+        <div class="notice-section">
+          <div class="notice-header">
+            <div class="notice-icon rules">
+              <el-icon><Warning /></el-icon>
+            </div>
+            <h4>考试规则</h4>
+          </div>
+          <ul class="notice-list warning">
+            <li>考试期间禁止切换浏览器标签页或窗口</li>
+            <li>禁止使用任何外部资源（如百度、课本等）</li>
+            <li>考试倒计时结束将自动提交试卷</li>
+            <li>考试中途离开页面考试倒计时仍会继续</li>
+            <li>请诚信考试，系统会记录您的操作行为</li>
+          </ul>
+        </div>
+        
+        <!-- 三、重要提醒 -->
+        <div class="notice-section">
+          <div class="notice-header">
+            <div class="notice-icon important">
+              <el-icon><InfoFilled /></el-icon>
+            </div>
+            <h4>重要提醒</h4>
+          </div>
+          <ul class="notice-list important">
+            <li>任何违规行为都可能被记录，并可能影响您的考试成绩</li>
+            <li>请认真审题，合理分配答题时间</li>
+          </ul>
+        </div>
+      </div>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button size="large" @click="examConfirmVisible = false">取消</el-button>
+          <el-button type="primary" size="large" @click="confirmStartExam">
+            <el-icon><Check /></el-icon>
+            {{ isContinueExam ? '确认继续考试' : '我已仔细阅读并理解以上考试规则，确认开始考试' }}
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -115,7 +184,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import request from '@/utils/request.js'
-import { Search, Document, Star, User, Clock } from '@element-plus/icons-vue'
+import { Search, Document, Star, User, Clock, Setting, Warning, InfoFilled, Check } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
@@ -126,6 +195,10 @@ const examList = ref([])
 const pageNum = ref(1)
 const pageSize = ref(12)
 const total = ref(0)
+const examConfirmVisible = ref(false)
+const examConfirmTitle = ref('')
+const examConfirmPath = ref('')
+const isContinueExam = ref(false)
 
 // 状态映射
 const getStatusText = (status) => {
@@ -180,7 +253,17 @@ const loadExamList = async () => {
 
 // 去考试
 const goToExam = (exam) => {
-  router.push(`/front/exam/${exam.paperId}`)
+  const isContinue = exam.status === 'ongoing' && exam.scoreId
+  isContinueExam.value = isContinue
+  examConfirmTitle.value = isContinue ? '继续考试确认' : '考试注意事项'
+  examConfirmPath.value = `/front/exam/${exam.paperId}`
+  examConfirmVisible.value = true
+}
+
+// 确认开始考试
+const confirmStartExam = () => {
+  examConfirmVisible.value = false
+  router.push(examConfirmPath.value)
 }
 
 // 查看答卷
@@ -381,5 +464,142 @@ onMounted(() => {
   .exam-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* 考试确认弹窗样式 */
+.exam-confirm-dialog {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.exam-confirm-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #333 0%, #555 100%);
+  padding: 20px 24px;
+  margin: 0;
+}
+
+.exam-confirm-dialog :deep(.el-dialog__title) {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.exam-confirm-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.exam-confirm-dialog :deep(.el-dialog__footer) {
+  padding: 16px 24px 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.exam-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.notice-section {
+  background: #fafafa;
+  border-radius: 10px;
+  padding: 16px 20px;
+  border-left: 4px solid #333;
+}
+
+.notice-section:nth-child(2) {
+  border-left-color: #e6a23c;
+}
+
+.notice-section:nth-child(3) {
+  border-left-color: #f56c6c;
+}
+
+.notice-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.notice-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #fff;
+}
+
+.notice-icon.prepare {
+  background: linear-gradient(135deg, #333 0%, #666 100%);
+}
+
+.notice-icon.rules {
+  background: linear-gradient(135deg, #e6a23c 0%, #f0c78a 100%);
+}
+
+.notice-icon.important {
+  background: linear-gradient(135deg, #f56c6c 0%, #fab6b6 100%);
+}
+
+.notice-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.notice-list {
+  margin: 0;
+  padding-left: 24px;
+  list-style: none;
+}
+
+.notice-list li {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #606266;
+  line-height: 1.6;
+}
+
+.notice-list li:last-child {
+  margin-bottom: 0;
+}
+
+.notice-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #909399;
+  font-weight: bold;
+}
+
+.notice-list.warning li::before {
+  color: #e6a23c;
+}
+
+.notice-list.important li::before {
+  color: #f56c6c;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.dialog-footer .el-button {
+  min-width: 100px;
+}
+
+.dialog-footer .el-button--primary {
+  padding: 12px 24px;
+  font-weight: 500;
 }
 </style>

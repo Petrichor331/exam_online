@@ -236,4 +236,32 @@ public class QuestionService {
         }
         return result;
     }
+
+    public List<ExamQuestionVO> getQuestionsByIds(List<Integer> questionIds) {
+        List<Question> questions = questionMapper.selectByIds(questionIds);
+        
+        List<ExamQuestionVO> result = new ArrayList<>();
+        for (Question q : questions) {
+            ExamQuestionVO vo = new ExamQuestionVO();
+            vo.setId(q.getId());
+            vo.setName(q.getName());
+            vo.setTypeId(q.getTypeId());
+            vo.setScore(q.getScore());
+            vo.setReferenceAnswer(q.getReferenceAnswer());
+            vo.setDifficulty(q.getDifficulty());
+            vo.setKnowledgePoint(q.getKnowledgePoint());
+            
+            List<QuestionOption> options = questionOptionMapper.selectByQuestionId(q.getId());
+            List<QuestionOptionDTO> optionDTOs = options.stream().map(o -> {
+                QuestionOptionDTO dto = new QuestionOptionDTO();
+                dto.setId(o.getId());
+                dto.setOptionLabel(o.getOptionLabel());
+                dto.setOptionContent(o.getOptionContent());
+                return dto;
+            }).collect(Collectors.toList());
+            vo.setOptions(optionDTOs);
+            result.add(vo);
+        }
+        return result;
+    }
 }

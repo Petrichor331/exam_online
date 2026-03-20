@@ -90,6 +90,11 @@ public interface ScoreMapper {
     List<Score> selectByPaperId(@Param("paperId") Integer paperId);
 
     /**
+     * 统计某试卷的考试记录数量
+     */
+    int countByPaperId(@Param("paperId") Integer paperId);
+
+    /**
      * 根据试卷ID和学生ID查询考试记录scoreId
      */
     Score selectByPaperIdAndStudentId(@Param("paperId") Integer paperId,

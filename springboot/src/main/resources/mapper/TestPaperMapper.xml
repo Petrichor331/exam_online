@@ -19,7 +19,12 @@
                 WHEN NOW() &lt; tp.start THEN '未开始'
                 WHEN NOW() BETWEEN tp.start AND tp.end THEN '进行中'
                 ELSE '已结束'
-            END as status
+            END as status,
+            -- 是否已有学生参加考试
+            CASE
+                WHEN EXISTS (SELECT 1 FROM score s WHERE s.paper_id = tp.id) THEN true
+                ELSE false
+            END as hasExam
         FROM test_paper tp
         LEFT JOIN course c ON tp.course_id = c.id
         LEFT JOIN teacher t ON tp.teacher_id = t.id

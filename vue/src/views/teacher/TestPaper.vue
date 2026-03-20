@@ -42,7 +42,10 @@
           </div>
           <div class="paper-title-wrap">
             <h3 class="paper-name">{{ paper.paperName }}</h3>
-            <el-tag :type="getStatusType(paper.status)" size="small">{{ paper.status }}</el-tag>
+            <div class="tag-group">
+              <el-tag :type="getStatusType(paper.status)" size="small">{{ paper.status }}</el-tag>
+              <el-tag v-if="paper.hasExam" type="warning" size="small">已有考试</el-tag>
+            </div>
           </div>
         </div>
 
@@ -68,9 +71,19 @@
 
         <!-- 操作按钮 -->
         <div class="paper-actions">
-          <el-button type="primary" link @click="handleEdit(paper)">
-            <el-icon><Edit /></el-icon>编辑
-          </el-button>
+          <el-tooltip 
+            :content="getEditDisabledReason(paper)" 
+            placement="top"
+          >
+            <el-button 
+              type="primary" 
+              link 
+              @click="handleEdit(paper)"
+              :disabled="isEditDisabled(paper)"
+            >
+              <el-icon><Edit /></el-icon>编辑
+            </el-button>
+          </el-tooltip>
           <el-button type="danger" link @click="handleDelete(paper.id)">
             <el-icon><Delete /></el-icon>删除
           </el-button>
@@ -208,11 +221,11 @@
               >
                 {{ kp }}
               </el-tag>
-              <el-button type="primary" link @click="data.knowledgePointSelectVisible = true">
+              <el-button type="primary" link @click="showKnowledgePointSelectDialog">
                 + 添加知识点
               </el-button>
             </div>
-            <el-button v-else type="primary" @click="data.knowledgePointSelectVisible = true">
+            <el-button v-else type="primary" @click="showKnowledgePointSelectDialog">
               选择知识点
             </el-button>
           </div>
@@ -307,6 +320,22 @@ const getDifficultyType = (val) => {
 const getStatusType = (status) => {
   const types = { '未开始': 'info', '进行中': 'success', '已结束': 'danger' }
   return types[status] || 'info'
+}
+
+// 判断编辑按钮是否禁用
+const isEditDisabled = (paper) => {
+  return paper.hasExam || paper.status === '已结束'
+}
+
+// 获取编辑禁用原因
+const getEditDisabledReason = (paper) => {
+  if (paper.status === '已结束') {
+    return '该试卷已结束，禁止修改'
+  }
+  if (paper.hasExam) {
+    return '已有学生参加考试，禁止修改'
+  }
+  return '编辑试卷'
 }
 
 const rules = {
@@ -576,11 +605,15 @@ const removeQuestion = (index) => {
 }
 
 const loadKnowledgePoints = async () => {
-  const res = await request.get('/knowledgePoint/selectList', { params: { name: data.knowledgePointSearch } })
+  const res = await request.get('/question/getKnowledgePoints', { params: { courseId: data.form.courseId } })
   if (res.code === '200') data.knowledgePointList = res.data || []
 }
 
 const showKnowledgePointSelectDialog = () => {
+  if(!data.form.courseId){
+    ElMessage.warning('请先选择课程')
+    return
+  }
   data.tempSelectedKnowledgePoints = [...data.selectedKnowledgePoints]
   data.knowledgePointSelectVisible = true
   loadKnowledgePoints()
@@ -697,6 +730,12 @@ load()
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.tag-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .paper-info {

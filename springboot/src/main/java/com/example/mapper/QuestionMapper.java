@@ -45,4 +45,9 @@ public interface QuestionMapper {
                                                @Param("typeIds") List<Integer> typeIds,
                                                @Param("knowledgePoints") List<String> knowledgePoints,
                                                @Param("difficulty") Integer difficulty);
+
+    @Select("<script>SELECT * FROM question WHERE id IN " +
+            "<foreach collection='list' item='id' open='(' separator=',' close=')'>" +
+            "#{id}</foreach></script>")
+    List<Question> selectByIds(@Param("list") List<Integer> questionIds);
 }
