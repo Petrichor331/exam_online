@@ -20,6 +20,7 @@
           <el-menu-item index="/front/myCourse">我的课程</el-menu-item>
           <el-menu-item index="/front/examList">考试列表</el-menu-item>
           <el-menu-item index="/front/myScore">我的成绩</el-menu-item>
+          <el-menu-item index="/front/ai">AI助手</el-menu-item>
           <el-menu-item index="/front/person">个人中心</el-menu-item>
         </el-menu>
       </div>

@@ -53,7 +53,8 @@ const router = createRouter({
         { path: 'practice-exam/:courseId', meta: { name: '刷题练习' }, component: () => import('@/views/front/PracticeExam.vue')  },
         { path: 'exam-practice', meta: { name: '模拟考试' }, component: () => import('@/views/front/ExamPractice.vue')  },
         { path: 'answer/:scoreId', meta: { name: '查看答卷' }, component: () => import('@/views/front/Answer.vue')  },
-        { path: 'password', meta: { name: '修改密码' }, component: () => import('@/views/front/Password.vue')  },
+        { path: 'password', meta: { name: '修改密码' }, component: () => import('@/views/front/Password.vue') },
+        { path: 'ai', meta: { name: 'AI助手' }, component: () => import('@/views/front/AiAssistant.vue') },
       ]
     },
     { path: '/404', component: () => import('@/views/404.vue') },
