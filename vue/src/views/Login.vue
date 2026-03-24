@@ -25,8 +25,9 @@
         <el-form ref="formRef" :model="data.form" :rules="data.rules">
           <el-form-item prop="username">
             <el-input 
-              :prefix-icon="User" 
-              v-model="data.form.username" 
+              :prefix-icon="User"
+              v-model="data.form.username"
+              autocomplete="off"
               placeholder="请输入账号"
               size="large"
             />
@@ -39,6 +40,7 @@
               v-model="data.form.password" 
               placeholder="请输入密码"
               size="large"
+              autocomplete="new-password"
             />
           </el-form-item>
           

@@ -16,6 +16,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(jwtInterceptor).addPathPatterns("/**")
                 .excludePathPatterns("/")
-                .excludePathPatterns("/login", "/register", "/files/**", "/captcha");//这几个路径不需要拦截，可以直接url搜出来
+                .excludePathPatterns("/login", "/register", "/files/**", "/captcha","/sendEmailCaptcha",
+                        "/registerStep1","/registerStep2","/registerStep3");//这几个路径不需要拦截，可以直接url搜出来
     }
 }

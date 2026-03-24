@@ -11,10 +11,9 @@
     </select>
 
     <!-- insert into student (username, password, ...) values ('student', 'student', ...) -->
-    <insert id="insert" parameterType="com.example.entity.Student" useGeneratedKeys="true">
+    <insert id="insert" parameterType="com.example.entity.Student" useGeneratedKeys="true" keyProperty="id">
         insert into `student`
         <trim prefix="(" suffix=")" suffixOverrides=",">
-            <if test="id != null">id,</if>
             <if test="username != null">username,</if>
             <if test="password != null">password,</if>
             <if test="name != null">name,</if>
@@ -25,7 +24,6 @@
             <if test="status != null">status,</if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides=",">
-            <if test="id != null">#{id},</if>
             <if test="username != null">#{username},</if>
             <if test="password != null">#{password},</if>
             <if test="name != null">#{name},</if>

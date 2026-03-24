@@ -124,9 +124,57 @@ public class TeacherService {
         teacherMapper.updateById(dbTeacher);
     }
 
-    public void register(Account account) {
+    public Integer register(Account account) {
         Teacher teacher = new Teacher();
         BeanUtils.copyProperties(account,teacher);
         add(teacher);
+        return teacher.getId();
+    }
+
+    /**
+     * 根据邮箱查询教师
+     */
+    public Teacher selectByEmail(String email) {
+        return teacherMapper.selectByEmail(email);
+    }
+
+    /**
+     * 根据用户名查询教师
+     */
+    public Teacher selectByUsername(String username) {
+        return teacherMapper.selectByUsername(username);
+    }
+
+    /**
+     * 更新用户名和密码
+     */
+    public void updateUsernameAndPassword(Integer id, String username, String password) {
+        Teacher teacher = teacherMapper.selectById(id);
+        if(teacher == null){
+            throw new CustomException(ResultCodeEnum.USER_NOT_EXIST_ERROR);
+        }
+        teacher.setUsername(username);
+        teacher.setPassword(BCryptUtils.encode(password));
+        teacherMapper.updateById(teacher);
+    }
+
+    /**
+     * 更新用户信息
+     */
+    public void updateUserInfo(Integer id, String name, String phone, String avatar) {
+        Teacher teacher = teacherMapper.selectById(id);
+        if(teacher == null){
+            throw new CustomException(ResultCodeEnum.USER_NOT_EXIST_ERROR);
+        }
+        if(name != null && !name.isEmpty()){
+            teacher.setName(name);
+        }
+        if(phone != null && !phone.isEmpty()){
+            teacher.setPhone(phone);
+        }
+        if(avatar != null && !avatar.isEmpty()){
+            teacher.setAvatar(avatar);
+        }
+        teacherMapper.updateById(teacher);
     }
 }

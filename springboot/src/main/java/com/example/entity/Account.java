@@ -8,6 +8,7 @@ public class Account {
     private String role;
     private String newPassword;
     private String token;
+    private String email;
 
     public String getName() {
         return name;
@@ -63,5 +64,13 @@ public class Account {
 
     public void setNewPassword(String newPassword) {
         this.newPassword = newPassword;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }

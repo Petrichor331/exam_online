@@ -124,9 +124,57 @@ public class StudentService {
         studentMapper.updateById(dbStudent);
     }
 
-    public void register(Account account) {
+    public Integer register(Account account) {
         Student student = new Student();
         BeanUtils.copyProperties(account,student);
-        add( student);
+        add(student);
+        return student.getId();
+    }
+
+    /**
+     * 根据邮箱查询学生
+     */
+    public Student selectByEmail(String email) {
+        return studentMapper.selectByEmail(email);
+    }
+
+    /**
+     * 根据用户名查询学生
+     */
+    public Student selectByUsername(String username) {
+        return studentMapper.selectByUsername(username);
+    }
+
+    /**
+     * 更新用户名和密码
+     */
+    public void updateUsernameAndPassword(Integer id, String username, String password) {
+        Student student = studentMapper.selectById(id);
+        if(student == null){
+            throw new CustomException(ResultCodeEnum.USER_NOT_EXIST_ERROR);
+        }
+        student.setUsername(username);
+        student.setPassword(BCryptUtils.encode(password));
+        studentMapper.updateById(student);
+    }
+
+    /**
+     * 更新用户信息
+     */
+    public void updateUserInfo(Integer id, String name, String phone, String avatar) {
+        Student student = studentMapper.selectById(id);
+        if(student == null){
+            throw new CustomException(ResultCodeEnum.USER_NOT_EXIST_ERROR);
+        }
+        if(name != null && !name.isEmpty()){
+            student.setName(name);
+        }
+        if(phone != null && !phone.isEmpty()){
+            student.setPhone(phone);
+        }
+        if(avatar != null && !avatar.isEmpty()){
+            student.setAvatar(avatar);
+        }
+        studentMapper.updateById(student);
     }
 }

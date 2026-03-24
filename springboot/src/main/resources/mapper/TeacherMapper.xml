@@ -11,7 +11,7 @@
     </select>
 
     <!-- insert into teacher (username, password, ...) values ('teacher', 'teacher', ...) -->
-    <insert id="insert" parameterType="com.example.entity.Teacher" useGeneratedKeys="true">
+    <insert id="insert" parameterType="com.example.entity.Teacher" useGeneratedKeys="true" keyProperty="id">
         insert into `teacher`
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="id != null">id,</if>
