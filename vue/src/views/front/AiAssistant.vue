@@ -141,10 +141,13 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import request from '@/utils/request.js'
 import { ElMessage } from 'element-plus'
 import { Delete, User, Aim, Reading, Calendar, Document, Position } from '@element-plus/icons-vue'
+
+const route = useRoute()
 
 const messages = ref([])
 const inputMessage = ref('')
@@ -160,19 +163,129 @@ const sendMessage = async () => {
   scrollToBottom()
 
   loading.value = true
+  
+  // 添加一个临时的助手消息，用于流式显示
+  const tempMsgIndex = messages.value.length
+  messages.value.push({ role: 'assistant', content: '' })
+
   try {
-    const res = await request.post('/ai/chat', {
-      message: content,
-      history: messages.value.map(m => ({ role: m.role, content: m.content }))
+    // 使用fetch流式接口（更现代的方式）
+    const currentUser = getCurrentUser()
+    const response = await fetch('/ai/chat/stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'token': currentUser.token || '' 
+      },
+      body: JSON.stringify({
+        message: content,
+        history: messages.value.slice(0, -1).map(m => ({ role: m.role, content: m.content })) // 排除刚添加的空消息
+      })
     })
 
-    if (res.code === '200') {
-      messages.value.push({ role: 'assistant', content: res.data })
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    // 检查响应类型是否为事件流
+    const contentType = response.headers.get('content-type')
+    if (contentType && contentType.includes('text/event-stream')) {
+      // 处理SSE流式响应
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder('utf-8')
+      let buffer = ''
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          
+          buffer += decoder.decode(value, { stream: true })
+          let lines = buffer.split('\n')
+          buffer = lines.pop() // 保留不完整的行
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.substring(5).trim()
+              if (data === '[DONE]') {
+                // 流结束
+                break
+              }
+              try {
+                const parsedData = JSON.parse(data)
+                if (parsedData.type === 'message') {
+                  // 更新最后一条助手消息
+                  messages.value[tempMsgIndex].content += parsedData.content
+                  // 滚动到底部
+                  scrollToBottom()
+                } else if (parsedData.type === 'error') {
+                  throw new Error(parsedData.content)
+                }
+              } catch (e) {
+                // 如果不是JSON，直接当作文本处理
+                if (data) {
+                  messages.value[tempMsgIndex].content += data
+                  scrollToBottom()
+                }
+              }
+            }
+          }
+          
+          // 检查是否收到了[DONE]信号
+          if (buffer.includes('[DONE]')) {
+            break
+          }
+        }
+        
+        // 处理剩余的buffer
+        if (buffer && !buffer.includes('[DONE]')) {
+          try {
+            const parsedData = JSON.parse(buffer)
+            if (parsedData.type === 'message') {
+              messages.value[tempMsgIndex].content += parsedData.content
+            } else if (parsedData.type === 'error') {
+              throw new Error(parsedData.content)
+            }
+          } catch (e) {
+            if (buffer.trim()) {
+              messages.value[tempMsgIndex].content += buffer
+            }
+          }
+        }
+      } finally {
+        reader.release()
+      }
     } else {
-      messages.value.push({ role: 'assistant', content: '抱歉，我暂时无法回答这个问题，请稍后再试。' })
+      // 如果不是流式响应，则作为普通JSON处理
+      const result = await response.json()
+      if (result.code === '200') {
+        messages.value[tempMsgIndex].content = result.data
+      } else {
+        messages.value[tempMsgIndex].content = result.message || '抱歉，我暂时无法回答这个问题，请稍后再试。'
+      }
+    }
+    
+    // 如果消息为空，设置默认内容
+    if (!messages.value[tempMsgIndex].content.trim()) {
+      messages.value[tempMsgIndex].content = '抱歉，我暂时无法回答这个问题，请稍后再试。'
     }
   } catch (error) {
-    messages.value.push({ role: 'assistant', content: '网络错误，请检查连接后重试。' })
+    console.error('Streaming error:', error)
+    // 如果流式失败，回退到普通接口
+    try {
+      const res = await request.post('/ai/chat', {
+        message: content,
+        history: messages.value.slice(0, -1).map(m => ({ role: m.role, content: m.content })) // 排除空消息
+      })
+
+      if (res.code === '200') {
+        messages.value[tempMsgIndex].content = res.data
+      } else {
+        messages.value[tempMsgIndex].content = '抱歉，我暂时无法回答这个问题，请稍后再试。'
+      }
+    } catch (fallbackError) {
+      messages.value[tempMsgIndex].content = '网络错误，请检查连接后重试。'
+    }
   } finally {
     loading.value = false
     scrollToBottom()
@@ -195,6 +308,27 @@ const scrollToBottom = () => {
     }
   })
 }
+
+// 处理URL参数中的题目信息
+const handleQuestionFromUrl = () => {
+  const message = route.query.message
+  if (message) {
+    try {
+      const decodedMessage = decodeURIComponent(message)
+      inputMessage.value = decodedMessage
+      // 自动发送消息
+      setTimeout(() => {
+        sendMessage()
+      }, 500)
+    } catch (error) {
+      console.error('解码题目信息失败:', error)
+    }
+  }
+}
+
+onMounted(() => {
+  handleQuestionFromUrl()
+})
 
 const getCurrentTime = () => {
   const now = new Date()

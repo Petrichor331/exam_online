@@ -45,8 +45,8 @@ python:
   service:
     url: http://localhost:5000  # Python服务地址
 
-# AI学习助手配置（硅基流动）
+# AI学习助手配置
 ai:
   siliconflow:
-    api-key: sk-goeihqvwzmkpwvrbctgjfrjuvczhocqcvovfbfsrddqljocb  # 请替换为您的硅基流动 API Key
+    api-key: sk-goeihqvwzmkpwvrbctgjfrjuvczhocqcvovfbfsrddqljocb
     api-url: https://api.siliconflow.cn/v1/chat/completions

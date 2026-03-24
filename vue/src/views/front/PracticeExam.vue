@@ -130,6 +130,17 @@
               {{ getUserAnswer(question.id) }}
             </span>
           </div>
+          <div class="ai-help-row">
+            <el-button 
+              type="primary" 
+              size="small" 
+              @click="askAI(question)"
+              class="ask-ai-btn"
+            >
+              <el-icon><ChatDotRound /></el-icon>
+              问AI
+            </el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -142,6 +153,7 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { ChatDotRound } from '@element-plus/icons-vue'
 import request from '@/utils/request.js'
 import { getCurrentUser } from '@/utils/userStorage.js'
 
@@ -347,6 +359,36 @@ const goBack = () => {
   router.push('/front/practice')
 }
 
+const askAI = (question) => {
+  // 构造题目信息
+  let questionInfo = `题目：${question.name}\n`
+  
+  // 添加选项信息（如果有）
+  if (question.options && question.options.length > 0) {
+    questionInfo += '选项：\n'
+    question.options.forEach(opt => {
+      questionInfo += `${opt.optionLabel}. ${opt.optionContent}\n`
+    })
+  }
+  
+  // 添加题目类型和分值
+  questionInfo += `题型：${getTypeName(question.typeId)}\n`
+  questionInfo += `分值：${question.score}分\n`
+  
+  // 添加正确答案（如果已提交）
+  if (submittedAnswers[question.id] && question.referenceAnswer) {
+    questionInfo += `正确答案：${question.referenceAnswer}\n`
+    questionInfo += `你的答案：${getUserAnswer(question.id)}\n`
+  }
+  
+  // 构造AI提问内容
+  const aiMessage = `请帮我分析这道${getTypeName(question.typeId)}：\n\n${questionInfo}\n请详细解释解题思路和知识点。`
+  
+  // 跳转到AI助手页面并传递题目信息
+  const encodedMessage = encodeURIComponent(aiMessage)
+  router.push(`/front/ai?message=${encodedMessage}`)
+}
+
 onMounted(() => {
   loadQuestions()
 })
@@ -505,5 +547,28 @@ onMounted(() => {
 .result-row .value.wrong {
   color: #f56c6c;
   font-weight: bold;
+}
+
+.ai-help-row {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px dashed #e0e0e0;
+}
+
+.ask-ai-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.ask-ai-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.ask-ai-btn .el-icon {
+  margin-right: 6px;
 }
 </style>
