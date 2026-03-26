@@ -96,8 +96,16 @@ public class WebController {
     @PostMapping("/sendEmailCaptcha")
     public Result sendEmailCaptcha(@RequestBody Map<String, String> params){
         String email = params.get("email");
+        String captchaId = params.get("captchaId");
+        String captchaCode = params.get("captchaCode");
+        
         if(email == null || email.isEmpty()){
             return Result.error("邮箱不能为空");
+        }
+        
+        // 验证图形验证码
+        if(captchaId == null || captchaCode == null || !captchaService.verifyCaptcha(captchaId, captchaCode)){
+            return Result.error("图形验证码错误");
         }
         
         boolean success = emailService.sendEmailCaptcha(email);

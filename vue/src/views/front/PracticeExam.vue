@@ -504,6 +504,13 @@ onMounted(() => {
   transition: all 0.3s;
 }
 
+.option-item:deep(.el-radio__label),
+.option-item:deep(.el-checkbox__label) {
+  flex: 1;
+  white-space: normal;
+  line-height: 1.6;
+}
+
 .option-item:hover:not(.is-disabled) {
   border-color: #409eff;
 }

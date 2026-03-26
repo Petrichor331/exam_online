@@ -5,6 +5,9 @@ import com.example.service.CaptchaService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/captcha")
 public class CaptchaController {
@@ -14,11 +17,10 @@ public class CaptchaController {
     
     /**
      * 获取验证码图片
-     * 返回格式：base64图片,captchaId
      */
     @GetMapping
     public Result getCaptcha() {
-        String result = captchaService.generateCaptcha();
+        Map<String, String> result = captchaService.generateCaptchaMap();
         return Result.success(result);
     }
     

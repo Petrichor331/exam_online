@@ -724,6 +724,16 @@ onMounted(()=>{
   border-radius: 6px;
   transition: all 0.3s;
   width: 100%;
+  margin: 0 !important; /* 移除默认的 margin */
+  display: flex !important;
+  align-items: flex-start;
+}
+
+.option-item:deep(.el-radio__label),
+.option-item:deep(.el-checkbox__label) {
+  flex: 1;
+  white-space: normal;
+  line-height: 1.6;
 }
 
 .option-item:hover {

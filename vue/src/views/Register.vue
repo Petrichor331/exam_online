@@ -52,6 +52,23 @@
               />
             </el-form-item>
             
+            <el-form-item prop="captchaCode">
+              <div class="captcha-wrapper">
+                <el-input 
+                  v-model="step1.form.captchaCode" 
+                  placeholder="请输入图形验证码"
+                  size="large"
+                  style="flex: 1"
+                />
+                <img 
+                  class="captcha-code" 
+                  :src="captchaImage" 
+                  @click="refreshCaptcha" 
+                  title="点击刷新"
+                />
+              </div>
+            </el-form-item>
+            
             <el-form-item prop="emailCaptcha">
               <div class="captcha-row">
                 <el-input 
@@ -209,6 +226,9 @@ const accountId = ref(null)
 const loading = ref(false)
 const sendingCaptcha = ref(false)
 const captchaButtonText = ref('发送验证码')
+const captchaCode = ref('')
+const captchaId = ref('')
+const captchaImage = ref('')
 
 const stepTitle = computed(() => {
   switch(currentStep.value) {
@@ -224,12 +244,17 @@ const step1 = reactive({
   form: {
     email: '',
     emailCaptcha: '',
+    captchaCode: '',
     role: 'STUDENT'
   },
   rules: {
     email: [
       { required: true, message: '请输入邮箱', trigger: 'blur' },
       { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
+    ],
+    captchaCode: [
+      { required: true, message: '请输入图形验证码', trigger: 'blur' },
+      { len: 4, message: '图形验证码必须为4位', trigger: 'blur' }
     ],
     emailCaptcha: [
       { required: true, message: '请输入验证码', trigger: 'blur' },
@@ -318,7 +343,17 @@ onMounted(() => {
       router.push('/manager/home')
     }
   }
+  refreshCaptcha()
 })
+
+const refreshCaptcha = () => {
+  request.get('/captcha').then(res => {
+    if (res.code === '200') {
+      captchaId.value = res.data.captchaId
+      captchaImage.value = res.data.captchaImage
+    }
+  })
+}
 
 const sendEmailCaptcha = () => {
   const email = step1.form.email
@@ -326,14 +361,23 @@ const sendEmailCaptcha = () => {
     ElMessage.error('请输入邮箱')
     return
   }
+  if (!step1.form.captchaCode) {
+    ElMessage.error('请输入图形验证码')
+    return
+  }
   
   sendingCaptcha.value = true
   captchaButtonText.value = '发送中...'
   
-  request.post('/sendEmailCaptcha', { email })
+  request.post('/sendEmailCaptcha', { 
+    email,
+    captchaId: captchaId.value,
+    captchaCode: step1.form.captchaCode
+  })
     .then(res => {
       if (res.code === '200') {
         ElMessage.success('验证码已发送，请查收')
+        refreshCaptcha()
         // 开始倒计时
         let timeLeft = 60
         const interval = setInterval(() => {
@@ -347,12 +391,14 @@ const sendEmailCaptcha = () => {
         }, 1000)
       } else {
         ElMessage.error(res.msg || '验证码发送失败')
+        refreshCaptcha()
         sendingCaptcha.value = false
         captchaButtonText.value = '发送验证码'
       }
     })
     .catch(err => {
       ElMessage.error('网络错误，请稍后重试')
+      refreshCaptcha()
       sendingCaptcha.value = false
       captchaButtonText.value = '发送验证码'
     })
@@ -638,6 +684,30 @@ const beforeAvatarUpload = (file) => {
 
 .captcha-row .el-input {
   flex: 1;
+}
+
+/* 图形验证码 */
+.captcha-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.captcha-wrapper .el-input {
+  flex: 1;
+}
+
+.captcha-code {
+  width: 120px;
+  height: 40px;
+  cursor: pointer;
+  border-radius: 4px;
+  border: 1px solid #dcdfe6;
+}
+
+.captcha-code:hover {
+  border-color: #409eff;
 }
 
 .captcha-btn {

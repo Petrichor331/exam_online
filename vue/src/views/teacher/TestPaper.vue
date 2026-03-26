@@ -64,8 +64,12 @@
             <span class="info-value">{{ paper.type === 'manual' ? '手动组卷' : '自动组卷' }}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">时间</span>
+            <span class="info-label">开始时间</span>
             <span class="info-value">{{ paper.startTime }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">结束时间</span>
+            <span class="info-value">{{ paper.endTime }}</span>
           </div>
         </div>
 

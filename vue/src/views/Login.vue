@@ -60,9 +60,12 @@
                 size="large"
                 style="flex: 1"
               />
-              <div class="captcha-code" @click="refreshCaptcha" title="点击刷新">
-                {{ data.captchaCode }}
-              </div>
+              <img 
+                class="captcha-code" 
+                :src="data.captchaImage" 
+                @click="refreshCaptcha" 
+                title="点击刷新"
+              />
             </div>
           </el-form-item>
           
@@ -99,21 +102,17 @@ const data = reactive({
     password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
   },
   captchaCode: '',
-  captchaId: ''
+  captchaId: '',
+  captchaImage: ''
 })
 
 const formRef = ref()
 
 const refreshCaptcha = () => {
   request.get('/captcha').then(res => {
-    console.log('验证码响应:', res)
     if (res.code === '200') {
-      const parts = res.data.split(',')
-      data.captchaId = parts[0]
-      data.captchaCode = parts[1]
-      console.log(data.captchaId)
-      console.log(data.captchaCode)
-
+      data.captchaId = res.data.captchaId
+      data.captchaImage = res.data.captchaImage
     }
   }).catch(err => {
     console.error('获取验证码失败:', err)
@@ -330,25 +329,10 @@ onMounted(() => {
 }
 
 .captcha-code {
-  width: 100px;
-  height: 40px;
-  background: #f0f0f0;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: bold;
-  letter-spacing: 8px;
-  color: #333;
-  cursor: pointer;
-  user-select: none;
-}
-
-.captcha-image {
   width: 120px;
   height: 40px;
   cursor: pointer;
   border-radius: 4px;
+  border: 1px solid #dcdfe6;
 }
 </style>

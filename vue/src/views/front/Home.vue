@@ -6,15 +6,30 @@
         <p>今天是 {{ currentDate }}，准备好迎接新的挑战了吗？</p>
       </div>
       <div class="banner-illustration">
-        <el-carousel :interval="4000" arrow="never" height="320px" indicator-position="none">
-          <el-carousel-item>
-            <img src="@/assets/img/在线考试系统登录背景1.png" alt="轮播图1">
+        <el-carousel :interval="2000"
+                     arrow="always"
+                     height="320px"
+                     indicator-position="none"
+                     :autoplay="true"
+                     :loop="true"
+        >
+          <el-carousel-item >
+            <img src="@/assets/img/学习助手.png"
+                 alt="轮播图1"
+                 @click="goToAiAssistant"
+            >
           </el-carousel-item>
           <el-carousel-item>
-            <img src="@/assets/img/在线考试系统登录背景2.png" alt="轮播图2">
+            <img src="@/assets/img/刷题中心.png"
+                 alt="轮播图2"
+                 @click="goToPractice"
+            >
           </el-carousel-item>
           <el-carousel-item>
-            <img src="@/assets/img/登录背景1.png" alt="轮播图3">
+            <img src="../../assets/img/模拟考试.png"
+                 alt="轮播图3"
+                 @click="goToTryTest"
+            >
           </el-carousel-item>
         </el-carousel>
       </div>
@@ -305,6 +320,16 @@ const currentDate = computed(() => {
   const examConfirmTitle = ref('')
   const examConfirmPath = ref('')
 
+
+const goToAiAssistant = ()=>{
+  router.push('/front/ai')
+}
+const goToPractice = () => {
+  router.push('/front/practice')
+}
+const goToTryTest = () =>{
+  router.push('/front/exam-practice')
+}
 // 加载首页数据
 const loadHomeData = async () => {
   loading.value = true
