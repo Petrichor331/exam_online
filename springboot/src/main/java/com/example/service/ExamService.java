@@ -595,7 +595,7 @@ public class ExamService {
             // 正式考试：待评分，等教师批改主观题
             scoreMapper.updateStatus(scoreId, "grading");
             // 异步调用AI评分（简答题）
-            callPythonGradingAsync(scoreId);
+//            callPythonGradingAsync(scoreId);
         }
 
         // 6. 删除 Redis 中的开始时间
@@ -669,7 +669,7 @@ public class ExamService {
                 // 填空题保持pending状态，由教师手动评分
                 log.info("填空题暂不自动评分，题目ID: {}, 保持pending状态，等待教师手动评分", answer.getQuestionId());
             }
-            // 简答题：保持pending，等待AI评分
+            // 简答题：保持pending
             else {
                 log.info("简答题暂不评分，题目ID: {}, 保持pending状态", answer.getQuestionId());
             }
@@ -679,32 +679,32 @@ public class ExamService {
     /**
      * 异步调用Python AI评分
      */
-    @Async
-    public void callPythonGradingAsync(Integer scoreId) {
-        try {
-            log.info("开始AI评分，scoreId: {}", scoreId);
-            
-            // 查询待评分的简答题
-            List<StudentAnswer> subjectiveAnswers = studentAnswerMapper.selectPendingSubjective(scoreId);
-            
-            if (subjectiveAnswers.isEmpty()) {
-                log.info("没有需要AI评分的题目，scoreId: {}", scoreId);
-                calculateTotalScore(scoreId);
-                return;
-            }
-            
-            // 调用Python AI评分服务进行批量评分
-            List<PythonGradingService.AIGradingResult> results = pythonGradingService.gradeBatch(subjectiveAnswers);
-            
-            log.info("AI评分完成，共{}道题，scoreId: {}", results.size(), scoreId);
-            
-            // 计算总分
-            calculateTotalScore(scoreId);
-            
-        } catch (Exception e) {
-            log.error("AI评分失败，scoreId: {}", scoreId, e);
-        }
-    }
+//    @Async
+//    public void callPythonGradingAsync(Integer scoreId) {
+//        try {
+//            log.info("开始AI评分，scoreId: {}", scoreId);
+//
+//            // 查询待评分的简答题
+//            List<StudentAnswer> subjectiveAnswers = studentAnswerMapper.selectPendingSubjective(scoreId);
+//
+//            if (subjectiveAnswers.isEmpty()) {
+//                log.info("没有需要AI评分的题目，scoreId: {}", scoreId);
+//                calculateTotalScore(scoreId);
+//                return;
+//            }
+//
+//            // 调用Python AI评分服务进行批量评分
+//            List<PythonGradingService.AIGradingResult> results = pythonGradingService.gradeBatch(subjectiveAnswers);
+//
+//            log.info("AI评分完成，共{}道题，scoreId: {}", results.size(), scoreId);
+//
+//            // 计算总分
+//            calculateTotalScore(scoreId);
+//
+//        } catch (Exception e) {
+//            log.error("AI评分失败，scoreId: {}", scoreId, e);
+//        }
+//    }
     
     /**
      * 计算总分（AI评分完成后调用，但不离线更新到数据库）
